@@ -12,7 +12,7 @@ export class ExecutionService {
 
     async runPythonCode(code: string): Promise<string> {
         const container = await this.docker.createContainer({
-            Image: 'python:3.9-alpine',
+            Image: 'python:3.12.0-alpine',
             Cmd: ['python', '-c', code],
             Tty: false,
         });
