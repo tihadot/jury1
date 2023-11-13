@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import * as Docker from 'dockerode';
+import { mkdirSync, rmSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { v4 as uuidv4 } from 'uuid';
+
 
 /**
  * @class ExecutionService - Service that handles the execution of code
@@ -22,6 +26,7 @@ export class ExecutionService {
      * @returns { Promise<string> } - The output of the code
      */
     async runPythonCode(code: string): Promise<string> {
+        // Create and start the Docker container
         const container = await this.docker.createContainer({
             Image: 'python:3.12.0-alpine',
             Cmd: ['python', '-c', code],
@@ -30,6 +35,7 @@ export class ExecutionService {
 
         await container.start();
 
+        // Fetch the output
         const output = await new Promise<string>((resolve, reject) => {
             container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
                 if (err) {
@@ -42,6 +48,7 @@ export class ExecutionService {
             });
         });
 
+        // Cleanup: Stop and remove the container
         // Get container information
         const containerInfo = await container.inspect();
 
@@ -52,6 +59,71 @@ export class ExecutionService {
 
         // Remove the container
         await container.remove();
+
+        return output;
+    }
+
+    /**
+     * Runs the given python project code in a docker container
+     * @param { string } mainFile - The main file of the project (base64 encoded content)
+     * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
+     * @returns { Promise<string> } - The output of the code
+     */
+    async runPythonProject(mainFile: string, additionalFiles: Record<string, string>): Promise<string> {
+        // Create a unique temporary directory for this execution
+        const executionId = uuidv4();
+        const tempDir = join(__dirname, 'temp', executionId);
+        mkdirSync(tempDir, { recursive: true });
+
+        // Decode and save the main file
+        const mainFilePath = join(tempDir, 'main.py');
+        writeFileSync(mainFilePath, Buffer.from(mainFile, 'base64').toString('utf-8'));
+
+        // Decode and save additional files
+        for (const [filename, content] of Object.entries(additionalFiles)) {
+            const filePath = join(tempDir, filename);
+            writeFileSync(filePath, Buffer.from(content, 'base64').toString('utf-8'));
+        }
+
+        // Create and start the Docker container
+        const container = await this.docker.createContainer({
+            Image: 'python:3.12.0-alpine',
+            Cmd: ['python', '/usr/src/app/main.py'],
+            Tty: false,
+            HostConfig: {
+                // Bind mount the temp directory to the container
+                Binds: [`${tempDir}:/usr/src/app`],
+            },
+        });
+
+        await container.start();
+
+        // Fetch the output
+        const output = await new Promise<string>((resolve, reject) => {
+            container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
+                if (err) {
+                    return reject(err);
+                }
+
+                let data = '';
+                stream.on('data', chunk => data += this.parseOutput(chunk.toString('utf8')));
+                stream.on('end', () => resolve(data));
+            });
+        });
+
+        // Cleanup: Stop and remove the container, and delete the temp directory
+        // Get container information
+        const containerInfo = await container.inspect();
+
+        // Check if the container is already stopped
+        if (containerInfo.State.Status !== 'exited') {
+            await container.stop();
+        }
+
+        // Remove the container
+        await container.remove();
+
+        rmSync(tempDir, { recursive: true, force: true });
 
         return output;
     }
