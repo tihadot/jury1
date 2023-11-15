@@ -67,9 +67,10 @@ export class ExecutionService {
      * Runs the given python project code in a docker container
      * @param { string } mainFile - The main file of the project (base64 encoded content)
      * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
+     * @param { boolean } shouldEncodeBase64 - Whether the result should be base64 encoded
      * @returns { Promise<string> } - The output of the code
      */
-    async runPythonProject(mainFile: string, additionalFiles: Record<string, string>): Promise<string> {
+    async runPythonProject(mainFile: string, additionalFiles: Record<string, string>, shouldEncodeBase64: boolean): Promise<string> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(__dirname, 'temp', executionId);
@@ -99,7 +100,7 @@ export class ExecutionService {
         await container.start();
 
         // Fetch the output
-        const output = await new Promise<string>((resolve, reject) => {
+        let output = await new Promise<string>((resolve, reject) => {
             container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
                 if (err) {
                     return reject(err);
@@ -110,6 +111,10 @@ export class ExecutionService {
                 stream.on('end', () => resolve(data));
             });
         });
+
+        if (shouldEncodeBase64) {
+            output = Buffer.from(output).toString('base64');
+        }
 
         // Cleanup: Stop and remove the container, and delete the temp directory
         // Get container information
