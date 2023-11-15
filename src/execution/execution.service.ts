@@ -23,9 +23,16 @@ export class ExecutionService {
     /**
      * Runs the given python code in a docker container
      * @param { string } code - The code to run
+     * @param { boolean } isInputBase64 - Whether the input is base64 encoded
+     * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
      * @returns { Promise<string> } - The output of the code
      */
-    async runPythonCode(code: string): Promise<string> {
+    async runPythonCode(code: string, isInputBase64: boolean, shouldOutputBase64: boolean): Promise<string> {
+        // Decode the input if it is base64 encoded
+        if (isInputBase64) {
+            code = Buffer.from(code, 'base64').toString('utf-8');
+        }
+
         // Create and start the Docker container
         const container = await this.docker.createContainer({
             Image: 'python:3.12.0-alpine',
@@ -36,7 +43,7 @@ export class ExecutionService {
         await container.start();
 
         // Fetch the output
-        const output = await new Promise<string>((resolve, reject) => {
+        let output = await new Promise<string>((resolve, reject) => {
             container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
                 if (err) {
                     return reject(err);
@@ -60,6 +67,11 @@ export class ExecutionService {
         // Remove the container
         await container.remove();
 
+        // Encode the output if it should be base64 encoded
+        if (shouldOutputBase64) {
+            output = Buffer.from(output).toString('base64');
+        }
+
         return output;
     }
 
@@ -67,10 +79,10 @@ export class ExecutionService {
      * Runs the given python project code in a docker container
      * @param { string } mainFile - The main file of the project (base64 encoded content)
      * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
-     * @param { boolean } shouldEncodeBase64 - Whether the result should be base64 encoded
+     * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
      * @returns { Promise<string> } - The output of the code
      */
-    async runPythonProject(mainFile: string, additionalFiles: Record<string, string>, shouldEncodeBase64: boolean): Promise<string> {
+    async runPythonProject(mainFile: string, additionalFiles: Record<string, string>, shouldOutputBase64: boolean): Promise<string> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(__dirname, 'temp', executionId);
@@ -112,10 +124,6 @@ export class ExecutionService {
             });
         });
 
-        if (shouldEncodeBase64) {
-            output = Buffer.from(output).toString('base64');
-        }
-
         // Cleanup: Stop and remove the container, and delete the temp directory
         // Get container information
         const containerInfo = await container.inspect();
@@ -129,6 +137,11 @@ export class ExecutionService {
         await container.remove();
 
         rmSync(tempDir, { recursive: true, force: true });
+
+        // Encode the output if it should be base64 encoded
+        if (shouldOutputBase64) {
+            output = Buffer.from(output).toString('base64');
+        }
 
         return output;
     }
