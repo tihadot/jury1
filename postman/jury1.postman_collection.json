@@ -1,0 +1,105 @@
+{
+	"info": {
+		"_postman_id": "e4c61db8-e405-4552-8ab2-901889f0d20c",
+		"name": "jury1",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29526519"
+	},
+	"item": [
+		{
+			"name": "Hello World!",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Execute Python",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "code",
+							"value": "print('Hello, world!')",
+							"type": "text"
+						},
+						{
+							"key": "code",
+							"value": "cHJpbnQoJ0hlbGxvLCB3b3JsZCEnKQ==",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "localhost:3000/execute/python?isInputBase64=false&shouldOutputBase64=false",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"python"
+					],
+					"query": [
+						{
+							"key": "isInputBase64",
+							"value": "false"
+						},
+						{
+							"key": "shouldOutputBase64",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Execute Python Project",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"mainFile\": \"ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICAiIiINCiAgICBNYWluIGZ1bmN0aW9uIHRoYXQgZXhlY3V0ZXMgd2hlbiB0aGUgc2NyaXB0IGlzIHJ1bi4NCg0KICAgIFRoaXMgZnVuY3Rpb24gY2FsbHMgdGhlICdncmVldCcgZnVuY3Rpb24gZnJvbSB0aGUgJ2hlbHBlcicgbW9kdWxlLA0KICAgIHBhc3NpbmcgIldvcmxkIiBhcyBhbiBhcmd1bWVudC4gVGhlIHJlc3VsdCBmcm9tICdncmVldCcgaXMgdGhlbiBwcmludGVkLg0KICAgIFRoaXMgc2NyaXB0IGlzIGEgc2ltcGxlIGRlbW9uc3RyYXRpb24gb2YgdXNpbmcgYSBmdW5jdGlvbiBmcm9tIGFub3RoZXINCiAgICBtb2R1bGUgdG8gZGlzcGxheSBhIGdyZWV0aW5nIG1lc3NhZ2UuDQogICAgIiIiDQogICAgcHJpbnQoZ3JlZXQoIldvcmxkIikpDQoNCg0KaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoNCiAgICAiIiINCiAgICBUaGlzIGNvbmRpdGlvbmFsIHN0YXRlbWVudCBjaGVja3MgaWYgdGhlIHNjcmlwdCBpcyBiZWluZyBydW4gZGlyZWN0bHkuDQogICAgSWYgc28sIGl0IGNhbGxzIHRoZSAnbWFpbicgZnVuY3Rpb24gdG8gZXhlY3V0ZSB0aGUgc2NyaXB0J3MgcHJpbWFyeSBsb2dpYy4NCiAgICAiIiINCiAgICBtYWluKCkNCg==\",\r\n    \"additionalFiles\": {\r\n        \"helper.py\": \"ZGVmIGdyZWV0KG5hbWUpOg0KICAgICIiIg0KICAgIFJldHVybnMgYSBncmVldGluZyBzdHJpbmcgYWRkcmVzc2VkIHRvIHRoZSBwcm92aWRlZCBuYW1lLg0KDQogICAgVGhpcyBmdW5jdGlvbiB0YWtlcyBhIG5hbWUgYXMgaW5wdXQgYW5kIHJldHVybnMgYSBncmVldGluZyBzdHJpbmcuDQogICAgSXQncyBhIHN0cmFpZ2h0Zm9yd2FyZCB1dGlsaXR5IGZ1bmN0aW9uIGZvciBjcmVhdGluZyBwZXJzb25hbGl6ZWQNCiAgICBncmVldGluZyBtZXNzYWdlcy4NCg0KICAgIFBhcmFtZXRlcnM6DQogICAgbmFtZSAoc3RyKTogVGhlIG5hbWUgdG8gYmUgaW5jbHVkZWQgaW4gdGhlIGdyZWV0aW5nIG1lc3NhZ2UuDQoNCiAgICBSZXR1cm5zOg0KICAgIHN0cjogQSBncmVldGluZyBtZXNzYWdlIHRoYXQgaW5jbHVkZXMgdGhlIHByb3ZpZGVkIG5hbWUuDQogICAgIiIiDQogICAgcmV0dXJuIGYiSGVsbG8sIHtuYW1lfSEiDQo=\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/execute/python-project?shouldOutputBase64=false",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"python-project"
+					],
+					"query": [
+						{
+							"key": "shouldOutputBase64",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
