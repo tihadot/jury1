@@ -7,7 +7,7 @@ class TestEncodeToBase64(unittest.TestCase):
     def test_encode_file_to_base64(self):
         # Create a test file with known content
         test_filename = "testfile.txt"
-        test_content = "Hello, World!"
+        test_content = "Hello, world!"
 
         with open(test_filename, "w") as file:
             file.write(test_content)

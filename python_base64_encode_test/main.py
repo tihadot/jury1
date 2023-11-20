@@ -10,7 +10,7 @@ def main():
     This script is a simple demonstration of using a function from another
     module to display a greeting message.
     """
-    print(greet("World"))
+    print(greet("world"))
 
 
 if __name__ == "__main__":

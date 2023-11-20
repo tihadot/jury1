@@ -10,7 +10,7 @@ class TestMain(unittest.TestCase):
         sys.stdout = captured_output  # Redirect stdout
         main()  # Call the main function
         sys.stdout = sys.__stdout__  # Reset redirect
-        self.assertEqual(captured_output.getvalue().strip(), "Hello, World!")
+        self.assertEqual(captured_output.getvalue().strip(), "Hello, world!")
 
 
 if __name__ == "__main__":

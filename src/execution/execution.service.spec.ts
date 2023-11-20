@@ -68,4 +68,29 @@ describe('ExecutionService', () => {
             await expect(service.runPythonCode(mockCode, true, true)).rejects.toThrow('Input is not valid base64 encoded');
         });
     });
+
+    /**
+     * This test requires the docker daemon to be running
+     */
+    describe('runPythonProject', () => {
+        it('should return the output of the project', async () => {
+            const mockMainFile = 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K';
+            const mockAdditionalFiles = { 'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOg0KICAgIHJldHVybiBmIkhlbGxvLCB7bmFtZX0hIg0K' };
+            const expectedResult = 'SGVsbG8sIHdvcmxkIQo=';
+            expect(await service.runPythonProject(mockMainFile, mockAdditionalFiles, true)).toBe(expectedResult);
+        });
+
+        it('should handle non-base64 output for projects', async () => {
+            const mockMainFile = 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K';
+            const mockAdditionalFiles = { 'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOg0KICAgIHJldHVybiBmIkhlbGxvLCB7bmFtZX0hIg0K' };
+            const expectedResult = 'Hello, world!\n';
+            expect(await service.runPythonProject(mockMainFile, mockAdditionalFiles, false)).toBe(expectedResult);
+        });
+
+        it('should throw an error if the input is not valid base64 encoded', async () => {
+            const mockMainFile = 'print("Hello, world!")';
+            const mockAdditionalFiles = { 'helper.py': 'print("Hello, world!")' };
+            await expect(service.runPythonProject(mockMainFile, mockAdditionalFiles, true)).rejects.toThrow('Input is not valid base64 encoded');
+        });
+    });
 });

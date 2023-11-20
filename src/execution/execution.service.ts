@@ -95,6 +95,11 @@ export class ExecutionService {
 
         // Decode and save the main file
         const mainFilePath = join(tempDir, 'main.py');
+
+        if (!this.isValidBase64(mainFile)) {
+            throw new Error('Input is not valid base64 encoded');
+        }
+
         writeFileSync(mainFilePath, Buffer.from(mainFile, 'base64').toString('utf-8'));
 
         // Decode and save additional files
