@@ -25,11 +25,16 @@ export class ExecutionService {
      * @param { string } code - The code to run
      * @param { boolean } isInputBase64 - Whether the input is base64 encoded
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
-     * @returns { Promise<string> } - The output of the code
+     * @returns { Promise<string> - The output of the code
+     * @throws { Error } - If the input is not valid base64 encoded
      */
     async runPythonCode(code: string, isInputBase64: boolean, shouldOutputBase64: boolean): Promise<string> {
         // Decode the input if it is base64 encoded
         if (isInputBase64) {
+            if (!this.isValidBase64(code)) {
+                throw new Error('Input is not valid base64 encoded');
+            }
+
             code = Buffer.from(code, 'base64').toString('utf-8');
         }
 
@@ -95,6 +100,11 @@ export class ExecutionService {
         // Decode and save additional files
         for (const [filename, content] of Object.entries(additionalFiles)) {
             const filePath = join(tempDir, filename);
+
+            if (!this.isValidBase64(content)) {
+                throw new Error('Input is not valid base64 encoded');
+            }
+
             writeFileSync(filePath, Buffer.from(content, 'base64').toString('utf-8'));
         }
 
@@ -164,5 +174,16 @@ export class ExecutionService {
         });
 
         return result;
+    }
+
+    /**
+     * Checks if the given code is valid base64 encoded
+     * @param { string } code - The code to check
+     * @returns { boolean } - Whether the code is valid base64 encoded
+     */
+    isValidBase64(code: string): boolean {
+        const base64regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
+
+        return base64regex.test(code);
     }
 }

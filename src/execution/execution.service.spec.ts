@@ -29,4 +29,43 @@ describe('ExecutionService', () => {
             expect(service.parseOutput(sampleOutput)).toBe(expectedOutput);
         });
     });
+
+    describe('isValidBase64', () => {
+        it('should return true for valid base64 encoded strings', () => {
+            const validBase64 = 'SGVsbG8sIHdvcmxkIQ==';
+            expect(service.isValidBase64(validBase64)).toBe(true);
+        });
+
+        it('should return false for invalid base64 encoded strings', () => {
+            const invalidBase64 = 'Hello, world!';
+            expect(service.isValidBase64(invalidBase64)).toBe(false);
+        });
+
+        it('should return false for invalid base64 encoded strings with incorrect number of characters', () => {
+            const invalidBase64 = 'SGVsbG8sIHdvcmxkIQ=';
+            expect(service.isValidBase64(invalidBase64)).toBe(false);
+        });
+    });
+
+    /**
+     * This test requires the docker daemon to be running
+     */
+    describe('runPythonCode', () => {
+        it('should return the output of the code', async () => {
+            const mockCode = 'cHJpbnQoJ0hlbGxvLCB3b3JsZCEnKQ==';
+            const expectedResult = 'SGVsbG8sIHdvcmxkIQo=';
+            expect(await service.runPythonCode(mockCode, true, true)).toBe(expectedResult);
+        });
+
+        it('should handle non-base64 input and output', async () => {
+            const mockCode = 'print("Hello, world!")';
+            const expectedResult = 'Hello, world!\n';
+            expect(await service.runPythonCode(mockCode, false, false)).toBe(expectedResult);
+        });
+
+        it('should throw an error if the input is not valid base64 encoded', async () => {
+            const mockCode = 'print("Hello, world!")';
+            await expect(service.runPythonCode(mockCode, true, true)).rejects.toThrow('Input is not valid base64 encoded');
+        });
+    });
 });
