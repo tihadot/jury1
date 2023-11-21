@@ -65,4 +65,22 @@ export class ExecutionController {
         console.log("output: ", output);
         return { output };
     }
+
+    /**
+     * Runs the given java code in a docker container
+     * @param { string } code - The code to run
+     * @param { boolean } isInputBase64 - Whether the input is base64 encoded (default: true)
+     * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
+     * @returns { Promise<{ output: string }> } - The output of the code
+     * @throws { BadRequestException } - If the input is not valid base64 encoded
+     */
+    @Post('/java')
+    async executeJava(
+        @Body('code') code: string,
+        @Query('isInputBase64', new DefaultValuePipe(true), ParseBoolPipe) isInputBase64: boolean,
+        @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
+    ): Promise<{ output: string }> {
+        const output = await this.executionService.runJavaCode(code, isInputBase64, shouldOutputBase64);
+        return { output };
+    }
 }

@@ -162,6 +162,80 @@ export class ExecutionService {
     }
 
     /**
+     * Runs the given java code in a docker container
+     * @param { string } code - The code to run
+     * @param { boolean } isInputBase64 - Whether the input is base64 encoded
+     * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
+     * @returns { Promise<string> } - The output of the code
+     * @throws { Error } - If the input is not valid base64 encoded
+     */
+    async runJavaCode(code: string, isInputBase64: boolean, shouldOutputBase64: boolean): Promise<string> {
+        // Decode the input if it is base64 encoded
+        if (isInputBase64) {
+            if (!this.isValidBase64(code)) {
+                throw new Error('Input is not valid base64 encoded');
+            }
+
+            code = Buffer.from(code, 'base64').toString('utf-8');
+        }
+
+        // Create a unique temporary directory for this execution
+        const tempDir = join(__dirname, 'temp', uuidv4());
+        mkdirSync(tempDir, { recursive: true });
+        const filePath = join(tempDir, 'Main.java');
+        writeFileSync(filePath, code);
+
+        // Create and start the Docker container
+        const container = await this.docker.createContainer({
+            Image: 'openjdk:22-slim',
+            Cmd: ['sh', '-c', 'javac Main.java && java Main'],
+            WorkingDir: '/usr/src/app',
+            Tty: false,
+            HostConfig: {
+                // Bind mount the temp directory to the container
+                Binds: [`${tempDir}:/usr/src/app`],
+            },
+        });
+
+        await container.start();
+
+        // Fetch the output
+        let output = await new Promise<string>((resolve, reject) => {
+            container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
+                if (err) {
+                    return reject(err);
+                }
+
+                let data = '';
+                stream.on('data', chunk => data += this.parseOutput(chunk.toString('utf8')));
+                stream.on('end', () => resolve(data));
+            });
+        });
+
+        // Cleanup: Stop and remove the container, and delete the temp directory
+        // Get container information
+        const containerInfo = await container.inspect();
+
+        // Check if the container is already stopped
+        if (containerInfo.State.Status !== 'exited') {
+            await container.stop();
+        }
+
+        // Remove the container
+        await container.remove();
+
+        rmSync(tempDir, { recursive: true, force: true });
+
+        // Encode the output if it should be base64 encoded
+        if (shouldOutputBase64) {
+            output = Buffer.from(output).toString('base64');
+        }
+
+        return output;
+    }
+
+
+    /**
      * Strips the first 8 characters from each line of the docker container logs (docker headers)
      * @param { string } output - The logs of the docker container
      * @returns { string } - The logs of the docker container without the docker headers
