@@ -100,6 +100,51 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Execute Java",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "code",
+							"value": "public class Main { public static void main(String[] args) { System.out.println(\"Hello, world!\"); } }",
+							"type": "text"
+						},
+						{
+							"key": "code",
+							"value": "cHVibGljIGNsYXNzIE1haW4KewogICAgcHVibGljIHN0YXRpYyB2b2lkIG1haW4oU3RyaW5nW10gYXJncykKICAgIHsKICAgICAgICBTeXN0ZW0ub3V0LnByaW50bG4oIkhlbGxvLCB3b3JsZCEiKTsKICAgIH0KfQ==",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "localhost:3000/execute/java?isInputBase64=false&shouldOutputBase64=false",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"java"
+					],
+					"query": [
+						{
+							"key": "isInputBase64",
+							"value": "false"
+						},
+						{
+							"key": "shouldOutputBase64",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
