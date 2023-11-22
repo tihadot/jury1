@@ -83,4 +83,21 @@ export class ExecutionController {
         const output = await this.executionService.runJavaCode(code, isInputBase64, shouldOutputBase64);
         return { output };
     }
+
+    /**
+     * Runs the given java project code in a docker container
+     * @param { string } body.mainClassName - The main class name of the project
+     * @param { Record<string, string> } body.files - The files of the project (filename: base64 encoded content)
+     * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
+     * @returns { Promise<{ output: string }> } - The output of the code
+     * @throws { BadRequestException } - If the input is not valid base64 encoded
+     */
+    @Post('/java-project')
+    async executeJavaProject(
+        @Body() body: { mainClassName: string; files: Record<string, string> },
+        @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
+    ): Promise<{ output: string }> {
+        const output = await this.executionService.runJavaProject(body.mainClassName, body.files, shouldOutputBase64);
+        return { output };
+    }
 }

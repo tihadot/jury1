@@ -3,7 +3,7 @@ import * as Docker from 'dockerode';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
-
+import { tmpdir } from 'os';
 
 /**
  * @class ExecutionService - Service that handles the execution of code
@@ -38,46 +38,50 @@ export class ExecutionService {
             code = Buffer.from(code, 'base64').toString('utf-8');
         }
 
-        // Create and start the Docker container
-        const container = await this.docker.createContainer({
-            Image: 'python:3.12.0-alpine',
-            Cmd: ['python', '-c', code],
-            Tty: false,
-        });
+        let container: Docker.Container;
 
-        await container.start();
-
-        // Fetch the output
-        let output = await new Promise<string>((resolve, reject) => {
-            container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
-                if (err) {
-                    return reject(err);
-                }
-
-                let data = '';
-                stream.on('data', chunk => data += this.parseOutput(chunk.toString('utf8')));
-                stream.on('end', () => resolve(data));
+        try {
+            // Create and start the Docker container
+            container = await this.docker.createContainer({
+                Image: 'python:3.12.0-alpine',
+                Cmd: ['python', '-c', code],
+                Tty: false,
             });
-        });
 
-        // Cleanup: Stop and remove the container
-        // Get container information
-        const containerInfo = await container.inspect();
+            await container.start();
 
-        // Check if the container is already stopped
-        if (containerInfo.State.Status !== 'exited') {
-            await container.stop();
+            // Fetch the output
+            let output = await new Promise<string>((resolve, reject) => {
+                container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
+                    if (err) {
+                        return reject(err);
+                    }
+
+                    let data = '';
+                    stream.on('data', chunk => data += this.parseOutput(chunk.toString('utf8')));
+                    stream.on('end', () => resolve(data));
+                });
+            });
+
+            // Encode the output if it should be base64 encoded
+            if (shouldOutputBase64) {
+                output = Buffer.from(output).toString('base64');
+            }
+
+            return output;
+        } finally {
+            // Cleanup: Stop and remove the container
+            // Get container information
+            const containerInfo = await container.inspect();
+
+            // Check if the container is already stopped
+            if (containerInfo.State.Status !== 'exited') {
+                await container.stop();
+            }
+
+            // Remove the container
+            await container.remove();
         }
-
-        // Remove the container
-        await container.remove();
-
-        // Encode the output if it should be base64 encoded
-        if (shouldOutputBase64) {
-            output = Buffer.from(output).toString('base64');
-        }
-
-        return output;
     }
 
     /**
@@ -90,7 +94,7 @@ export class ExecutionService {
     async runPythonProject(mainFile: string, additionalFiles: Record<string, string>, shouldOutputBase64: boolean): Promise<string> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
-        const tempDir = join(__dirname, 'temp', executionId);
+        const tempDir = join(tmpdir(), 'code-execution-platform', executionId);
         mkdirSync(tempDir, { recursive: true });
 
         // Decode and save the main file
@@ -113,52 +117,56 @@ export class ExecutionService {
             writeFileSync(filePath, Buffer.from(content, 'base64').toString('utf-8'));
         }
 
+        let container: Docker.Container;
+
         // Create and start the Docker container
-        const container = await this.docker.createContainer({
-            Image: 'python:3.12.0-alpine',
-            Cmd: ['python', '/usr/src/app/main.py'],
-            Tty: false,
-            HostConfig: {
-                // Bind mount the temp directory to the container
-                Binds: [`${tempDir}:/usr/src/app`],
-            },
-        });
-
-        await container.start();
-
-        // Fetch the output
-        let output = await new Promise<string>((resolve, reject) => {
-            container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
-                if (err) {
-                    return reject(err);
-                }
-
-                let data = '';
-                stream.on('data', chunk => data += this.parseOutput(chunk.toString('utf8')));
-                stream.on('end', () => resolve(data));
+        try {
+            container = await this.docker.createContainer({
+                Image: 'python:3.12.0-alpine',
+                Cmd: ['python', '/usr/src/app/main.py'],
+                Tty: false,
+                HostConfig: {
+                    // Bind mount the temp directory to the container
+                    Binds: [`${tempDir}:/usr/src/app`],
+                },
             });
-        });
 
-        // Cleanup: Stop and remove the container, and delete the temp directory
-        // Get container information
-        const containerInfo = await container.inspect();
+            await container.start();
 
-        // Check if the container is already stopped
-        if (containerInfo.State.Status !== 'exited') {
-            await container.stop();
+            // Fetch the output
+            let output = await new Promise<string>((resolve, reject) => {
+                container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
+                    if (err) {
+                        return reject(err);
+                    }
+
+                    let data = '';
+                    stream.on('data', chunk => data += this.parseOutput(chunk.toString('utf8')));
+                    stream.on('end', () => resolve(data));
+                });
+            });
+
+            // Encode the output if it should be base64 encoded
+            if (shouldOutputBase64) {
+                output = Buffer.from(output).toString('base64');
+            }
+
+            return output;
+        } finally {
+            // Cleanup: Stop and remove the container, and delete the temp directory
+            // Get container information
+            const containerInfo = await container.inspect();
+
+            // Check if the container is already stopped
+            if (containerInfo.State.Status !== 'exited') {
+                await container.stop();
+            }
+
+            // Remove the container
+            await container.remove();
+
+            rmSync(tempDir, { recursive: true, force: true });
         }
-
-        // Remove the container
-        await container.remove();
-
-        rmSync(tempDir, { recursive: true, force: true });
-
-        // Encode the output if it should be base64 encoded
-        if (shouldOutputBase64) {
-            output = Buffer.from(output).toString('base64');
-        }
-
-        return output;
     }
 
     /**
@@ -180,60 +188,154 @@ export class ExecutionService {
         }
 
         // Create a unique temporary directory for this execution
-        const tempDir = join(__dirname, 'temp', uuidv4());
+        const executionId = uuidv4();
+        const tempDir = join(tmpdir(), 'code-execution-platform', executionId);
         mkdirSync(tempDir, { recursive: true });
         const filePath = join(tempDir, 'Main.java');
         writeFileSync(filePath, code);
 
+        let container: Docker.Container;
+
         // Create and start the Docker container
-        const container = await this.docker.createContainer({
-            Image: 'openjdk:22-slim',
-            Cmd: ['sh', '-c', 'javac Main.java && java Main'],
-            WorkingDir: '/usr/src/app',
-            Tty: false,
-            HostConfig: {
-                // Bind mount the temp directory to the container
-                Binds: [`${tempDir}:/usr/src/app`],
-            },
-        });
-
-        await container.start();
-
-        // Fetch the output
-        let output = await new Promise<string>((resolve, reject) => {
-            container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
-                if (err) {
-                    return reject(err);
-                }
-
-                let data = '';
-                stream.on('data', chunk => data += this.parseOutput(chunk.toString('utf8')));
-                stream.on('end', () => resolve(data));
+        try {
+            container = await this.docker.createContainer({
+                Image: 'openjdk:22-slim',
+                Cmd: ['sh', '-c', 'javac Main.java && java Main'],
+                WorkingDir: '/usr/src/app',
+                Tty: false,
+                HostConfig: {
+                    // Bind mount the temp directory to the container
+                    Binds: [`${tempDir}:/usr/src/app`],
+                },
             });
-        });
 
-        // Cleanup: Stop and remove the container, and delete the temp directory
-        // Get container information
-        const containerInfo = await container.inspect();
+            await container.start();
 
-        // Check if the container is already stopped
-        if (containerInfo.State.Status !== 'exited') {
-            await container.stop();
+            // Fetch the output
+            let output = await new Promise<string>((resolve, reject) => {
+                container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
+                    if (err) {
+                        return reject(err);
+                    }
+
+                    let data = '';
+                    stream.on('data', chunk => data += this.parseOutput(chunk.toString('utf8')));
+                    stream.on('end', () => resolve(data));
+                });
+            });
+
+            // Encode the output if it should be base64 encoded
+            if (shouldOutputBase64) {
+                output = Buffer.from(output).toString('base64');
+            }
+
+            return output;
+        } finally {
+            // Cleanup: Stop and remove the container, and delete the temp directory
+            // Get container information
+            const containerInfo = await container.inspect();
+
+            // Check if the container is already stopped
+            if (containerInfo.State.Status !== 'exited') {
+                await container.stop();
+            }
+
+            // Remove the container
+            await container.remove();
+
+            rmSync(tempDir, { recursive: true, force: true });
         }
-
-        // Remove the container
-        await container.remove();
-
-        rmSync(tempDir, { recursive: true, force: true });
-
-        // Encode the output if it should be base64 encoded
-        if (shouldOutputBase64) {
-            output = Buffer.from(output).toString('base64');
-        }
-
-        return output;
     }
 
+    /**
+     * Runs the given java project code in a docker container
+     * @param { string } mainFile - The main file of the project (base64 encoded content)
+     * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
+     * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
+     * @returns { Promise<string> } - The output of the code
+     * @throws { Error } - If the input is not valid base64 encoded
+     */
+    async runJavaProject(mainClassName: string, files: Record<string, string>, shouldOutputBase64: boolean): Promise<string> {
+        // Create a unique temporary directory for this execution
+        const executionId = uuidv4();
+        const tempDir = join(tmpdir(), 'code-execution-platform', executionId);
+        mkdirSync(tempDir, { recursive: true });
+
+        // Decode and save files
+        for (const [filename, content] of Object.entries(files)) {
+            if (!this.isValidBase64(content)) {
+                throw new Error('Input is not valid base64 encoded');
+            }
+            const fileContent = Buffer.from(content, 'base64').toString('utf-8');
+
+            // Extract package name from file content
+            const packageNameMatch = fileContent.match(/^package\s+([a-zA-Z0-9_.]*);/m);
+            let packageDir = tempDir;
+            if (packageNameMatch) {
+                // Replace '.' with '/' to form the directory structure
+                const packagePath = packageNameMatch[1].replace(/\./g, '/');
+                packageDir = join(tempDir, packagePath);
+                mkdirSync(packageDir, { recursive: true });
+            }
+
+            const filePath = join(packageDir, filename);
+            writeFileSync(filePath, fileContent);
+        }
+
+        let container: Docker.Container;
+
+        // Create and start the Docker container
+        try {
+            container = await this.docker.createContainer({
+                Image: 'openjdk:22-slim',
+                // Finds all java files in the current directory structure and compiles them, then runs the main class
+                Cmd: ['sh', '-c', `find . -name "*.java" -exec javac {} + && java -cp . ${mainClassName}`],
+                WorkingDir: '/usr/src/app',
+                Tty: false,
+                HostConfig: {
+                    // Bind mount the temp directory to the container
+                    Binds: [`${tempDir}:/usr/src/app`],
+                },
+            });
+
+            await container.start();
+
+            // Fetch the output
+            let output = await new Promise<string>((resolve, reject) => {
+                container.logs({ stdout: true, stderr: true, follow: true }, (err, stream) => {
+                    if (err) {
+                        return reject(err);
+                    }
+
+                    let data = '';
+                    stream.on('data', chunk => data += this.parseOutput(chunk.toString('utf8')));
+                    stream.on('end', () => resolve(data));
+                });
+            });
+
+            // Encode the output if it should be base64 encoded
+            if (shouldOutputBase64) {
+                output = Buffer.from(output).toString('base64');
+            }
+
+            return output;
+        } finally {
+
+            // Cleanup: Stop and remove the container, and delete the temp directory
+            // Get container information
+            const containerInfo = await container.inspect();
+
+            // Check if the container is already stopped
+            if (containerInfo.State.Status !== 'exited') {
+                await container.stop();
+            }
+
+            // Remove the container
+            await container.remove();
+
+            rmSync(tempDir, { recursive: true, force: true });
+        }
+    }
 
     /**
      * Strips the first 8 characters from each line of the docker container logs (docker headers)
