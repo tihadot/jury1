@@ -22,7 +22,7 @@ describe('ExecutionController', () => {
 
     describe('executePython', () => {
         it('should return the output from the execution service with default base64 settings', async () => {
-            const mockCode = 'print(encoded_code)';
+            const mockCode = 'encoded_code';
             const expectedResult = { output: 'Encoded output\n' };
             jest.spyOn(executionService, 'runPythonCode').mockResolvedValue(expectedResult.output);
 
@@ -59,9 +59,30 @@ describe('ExecutionController', () => {
             expect(executionService.runPythonProject).toHaveBeenCalledWith(mockBody.mainFile, mockBody.additionalFiles, false);
         });
     });
+
+    describe('executeJava', () => {
+        it('should return the output from the execution service with default base64 settings', async () => {
+            const mockCode = 'encoded_code';
+            const expectedResult = { output: 'Encoded output\n' };
+            jest.spyOn(executionService, 'runJavaCode').mockResolvedValue(expectedResult.output);
+
+            expect(await controller.executeJava(mockCode, true, true)).toEqual(expectedResult);
+            expect(executionService.runJavaCode).toHaveBeenCalledWith(mockCode, true, true);
+        });
+
+        it('should handle non-base64 input and output', async () => {
+            const mockCode = 'public class Main { public static void main(String[] args) { System.out.println("Hello, world!"); } }';
+            const expectedResult = { output: 'Hello, world!\n' };
+            jest.spyOn(executionService, 'runJavaCode').mockResolvedValue(expectedResult.output);
+
+            expect(await controller.executeJava(mockCode, false, false)).toEqual(expectedResult);
+            expect(executionService.runJavaCode).toHaveBeenCalledWith(mockCode, false, false);
+        });
+    });
 });
 
 const mockExecutionService = {
     runPythonCode: jest.fn(),
     runPythonProject: jest.fn(),
+    runJavaCode: jest.fn(),
 };

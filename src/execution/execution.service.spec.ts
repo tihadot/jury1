@@ -93,4 +93,26 @@ describe('ExecutionService', () => {
             await expect(service.runPythonProject(mockMainFile, mockAdditionalFiles, true)).rejects.toThrow('Input is not valid base64 encoded');
         });
     });
+
+    /**
+     * This test requires the docker daemon to be running
+     */
+    describe('runJavaCode', () => {
+        it('should return the output of the code', async () => {
+            const mockCode = 'cHVibGljIGNsYXNzIE1haW4KewogICAgcHVibGljIHN0YXRpYyB2b2lkIG1haW4oU3RyaW5nW10gYXJncykKICAgIHsKICAgICAgICBTeXN0ZW0ub3V0LnByaW50bG4oIkhlbGxvLCB3b3JsZCEiKTsKICAgIH0KfQ==';
+            const expectedResult = 'SGVsbG8sIHdvcmxkIQo=';
+            expect(await service.runJavaCode(mockCode, true, true)).toBe(expectedResult);
+        });
+
+        it('should handle non-base64 input and output', async () => {
+            const mockCode = 'public class Main { public static void main(String[] args) { System.out.println("Hello, world!"); } }';
+            const expectedResult = 'Hello, world!\n';
+            expect(await service.runJavaCode(mockCode, false, false)).toBe(expectedResult);
+        });
+
+        it('should throw an error if the input is not valid base64 encoded', async () => {
+            const mockCode = 'public class Main { public static void main(String[] args) { System.out.println("Hello, world!"); } }';
+            await expect(service.runJavaCode(mockCode, true, true)).rejects.toThrow('Input is not valid base64 encoded');
+        });
+    });
 });
