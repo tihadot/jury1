@@ -115,4 +115,38 @@ describe('ExecutionService', () => {
             await expect(service.runJavaCode(mockCode, true, true)).rejects.toThrow('Input is not valid base64 encoded');
         });
     });
+
+    /**
+     * This test requires the docker daemon to be running
+     */
+    describe('runJavaProject', () => {
+        it('should return the output of the project', async () => {
+            const mockMainClassName = 'com.jury1.Main';
+            const mockFiles = {
+                'Main.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgTWFpbiB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgbWFpbihTdHJpbmdbXSBhcmdzKSB7CiAgICAgICAgU3RyaW5nIG1lc3NhZ2UgPSBIZWxwZXIuZ3JlZXQoIndvcmxkIik7CiAgICAgICAgU3lzdGVtLm91dC5wcmludGxuKG1lc3NhZ2UpOwogICAgfQp9Cg==',
+                'Helper.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgSGVscGVyIHsKICAgIHB1YmxpYyBzdGF0aWMgU3RyaW5nIGdyZWV0KFN0cmluZyBuYW1lKSB7CiAgICAgICAgcmV0dXJuICJIZWxsbywgIiArIG5hbWUgKyAiISI7CiAgICB9Cn0='
+            };
+            const expectedResult = 'SGVsbG8sIHdvcmxkIQo=';
+            expect(await service.runJavaProject(mockMainClassName, mockFiles, true)).toBe(expectedResult);
+        });
+
+        it('should handle non-base64 output for projects', async () => {
+            const mockMainClassName = 'com.jury1.Main';
+            const mockFiles = {
+                'Main.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgTWFpbiB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgbWFpbihTdHJpbmdbXSBhcmdzKSB7CiAgICAgICAgU3RyaW5nIG1lc3NhZ2UgPSBIZWxwZXIuZ3JlZXQoIndvcmxkIik7CiAgICAgICAgU3lzdGVtLm91dC5wcmludGxuKG1lc3NhZ2UpOwogICAgfQp9Cg==',
+                'Helper.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgSGVscGVyIHsKICAgIHB1YmxpYyBzdGF0aWMgU3RyaW5nIGdyZWV0KFN0cmluZyBuYW1lKSB7CiAgICAgICAgcmV0dXJuICJIZWxsbywgIiArIG5hbWUgKyAiISI7CiAgICB9Cn0='
+            };
+            const expectedResult = 'Hello, world!\n';
+            expect(await service.runJavaProject(mockMainClassName, mockFiles, false)).toBe(expectedResult);
+        });
+
+        it('should throw an error if the input is not valid base64 encoded', async () => {
+            const mockMainClassName = 'com.jury1.Main';
+            const mockFiles = {
+                'Main.java': 'public class Main { public static void main(String[] args) { System.out.println("Hello, world!"); } }',
+                'Helper.java': 'public class Helper { public static String greet(String name) { return "Hello, " + name + "!"; } }'
+            };
+            await expect(service.runJavaProject(mockMainClassName, mockFiles, true)).rejects.toThrow('Input is not valid base64 encoded');
+        });
+    });
 });

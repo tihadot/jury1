@@ -42,7 +42,7 @@ describe('ExecutionController', () => {
 
     describe('executePythonProject', () => {
         it('should return the output from the execution service with default base64 setting', async () => {
-            const mockBody = { mainFile: 'encoded_main_file', additionalFiles: { 'file1.py': 'encoded_file1_content' } };
+            const mockBody = { mainFile: 'encoded_main_file', additionalFiles: { 'file1.py': 'encoded_file1_content', 'file2.py': 'encoded_file2_content' } };
             const expectedResult = { output: 'Project output\n' };
             jest.spyOn(executionService, 'runPythonProject').mockResolvedValue(expectedResult.output);
 
@@ -51,7 +51,7 @@ describe('ExecutionController', () => {
         });
 
         it('should handle non-base64 output for projects', async () => {
-            const mockBody = { mainFile: 'encoded_main_file', additionalFiles: { 'file1.py': 'encoded_file1_content' } };
+            const mockBody = { mainFile: 'encoded_main_file', additionalFiles: { 'file1.py': 'encoded_file1_content', 'file2.py': 'encoded_file2_content' } };
             const expectedResult = { output: 'Project output\n' };
             jest.spyOn(executionService, 'runPythonProject').mockResolvedValue(expectedResult.output);
 
@@ -79,10 +79,31 @@ describe('ExecutionController', () => {
             expect(executionService.runJavaCode).toHaveBeenCalledWith(mockCode, false, false);
         });
     });
+
+    describe('executeJavaProject', () => {
+        it('should return the output from the execution service with default base64 setting', async () => {
+            const mockBody = { mainClassName: 'com.jury1.Main', files: { 'file1.java': 'encoded_file1_content', 'file2.java': 'encoded_file_2_content' } };
+            const expectedResult = { output: 'Project output\n' };
+            jest.spyOn(executionService, 'runJavaProject').mockResolvedValue(expectedResult.output);
+
+            expect(await controller.executeJavaProject(mockBody, true)).toEqual(expectedResult);
+            expect(executionService.runJavaProject).toHaveBeenCalledWith(mockBody.mainClassName, mockBody.files, true);
+        });
+
+        it('should handle non-base64 output for projects', async () => {
+            const mockBody = { mainClassName: 'com.jury1.Main', files: { 'file1.java': 'encoded_file1_content', 'file2.java': 'encoded_file_2_content' } };
+            const expectedResult = { output: 'Project output\n' };
+            jest.spyOn(executionService, 'runJavaProject').mockResolvedValue(expectedResult.output);
+
+            expect(await controller.executeJavaProject(mockBody, false)).toEqual(expectedResult);
+            expect(executionService.runJavaProject).toHaveBeenCalledWith(mockBody.mainClassName, mockBody.files, false);
+        });
+    });
 });
 
 const mockExecutionService = {
     runPythonCode: jest.fn(),
     runPythonProject: jest.fn(),
     runJavaCode: jest.fn(),
+    runJavaProject: jest.fn(),
 };
