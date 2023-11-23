@@ -4,6 +4,9 @@ import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
+import { PythonSanitizerService } from '../python-sanitizer/python-sanitizer.service';
+import { JavaSanitizerService } from '../java-sanitizer/java-sanitizer.service';
+
 
 /**
  * @class ExecutionService - Service that handles the execution of code
@@ -14,8 +17,13 @@ export class ExecutionService {
 
     /**
      * Creates an instance of ExecutionService.
+     * @param { PythonSanitizerService } pythonSanitizerService - The python sanitizer service
+     * @param { JavaSanitizerService } javaSanitizerService - The java sanitizer service
      */
-    constructor() {
+    constructor(
+        private readonly pythonSanitizerService: PythonSanitizerService,
+        private readonly javaSanitizerService: JavaSanitizerService
+    ) {
         // this.docker = new Docker({ socketPath: '/var/run/docker.sock' });
         this.docker = new Docker({ host: '127.0.0.1', port: 2375 });
     }
@@ -27,6 +35,7 @@ export class ExecutionService {
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
      * @returns { Promise<string> - The output of the code
      * @throws { Error } - If the input is not valid base64 encoded
+     * @throws { Error } - If the code is not safe to execute
      */
     async runPythonCode(code: string, isInputBase64: boolean, shouldOutputBase64: boolean): Promise<string> {
         // Decode the input if it is base64 encoded
@@ -37,6 +46,9 @@ export class ExecutionService {
 
             code = Buffer.from(code, 'base64').toString('utf-8');
         }
+
+        // Sanitize the code
+        code = this.pythonSanitizerService.sanitize(code);
 
         let container: Docker.Container;
 
@@ -90,6 +102,8 @@ export class ExecutionService {
      * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
      * @returns { Promise<string> } - The output of the code
+     * @throws { Error } - If the input is not valid base64 encoded
+     * @throws { Error } - If the code is not safe to execute
      */
     async runPythonProject(mainFile: string, additionalFiles: Record<string, string>, shouldOutputBase64: boolean): Promise<string> {
         // Create a unique temporary directory for this execution
@@ -104,7 +118,13 @@ export class ExecutionService {
             throw new Error('Input is not valid base64 encoded');
         }
 
-        writeFileSync(mainFilePath, Buffer.from(mainFile, 'base64').toString('utf-8'));
+        let mainFileContent = Buffer.from(mainFile, 'base64').toString('utf-8');
+
+        // Sanitize the code
+        mainFileContent = this.pythonSanitizerService.sanitize(mainFileContent);
+
+        // Write the sanitized code to the file
+        writeFileSync(mainFilePath, mainFileContent);
 
         // Decode and save additional files
         for (const [filename, content] of Object.entries(additionalFiles)) {
@@ -114,7 +134,13 @@ export class ExecutionService {
                 throw new Error('Input is not valid base64 encoded');
             }
 
-            writeFileSync(filePath, Buffer.from(content, 'base64').toString('utf-8'));
+            let fileContent = Buffer.from(content, 'base64').toString('utf-8');
+
+            // Sanitize the code
+            fileContent = this.pythonSanitizerService.sanitize(fileContent);
+
+            // Write the sanitized code to the file
+            writeFileSync(filePath, fileContent);
         }
 
         let container: Docker.Container;
@@ -176,6 +202,7 @@ export class ExecutionService {
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
      * @returns { Promise<string> } - The output of the code
      * @throws { Error } - If the input is not valid base64 encoded
+     * @throws { Error } - If the code is not safe to execute
      */
     async runJavaCode(code: string, isInputBase64: boolean, shouldOutputBase64: boolean): Promise<string> {
         // Decode the input if it is base64 encoded
@@ -186,6 +213,9 @@ export class ExecutionService {
 
             code = Buffer.from(code, 'base64').toString('utf-8');
         }
+
+        // Sanitize the code
+        code = this.javaSanitizerService.sanitize(code);
 
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
@@ -254,6 +284,7 @@ export class ExecutionService {
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
      * @returns { Promise<string> } - The output of the code
      * @throws { Error } - If the input is not valid base64 encoded
+     * @throws { Error } - If the code is not safe to execute
      */
     async runJavaProject(mainClassName: string, files: Record<string, string>, shouldOutputBase64: boolean): Promise<string> {
         // Create a unique temporary directory for this execution
@@ -266,7 +297,10 @@ export class ExecutionService {
             if (!this.isValidBase64(content)) {
                 throw new Error('Input is not valid base64 encoded');
             }
-            const fileContent = Buffer.from(content, 'base64').toString('utf-8');
+            let fileContent = Buffer.from(content, 'base64').toString('utf-8');
+
+            // Sanitize the code
+            fileContent = this.javaSanitizerService.sanitize(fileContent);
 
             // Extract package name from file content
             const packageNameMatch = fileContent.match(/^package\s+([a-zA-Z0-9_.]*);/m);

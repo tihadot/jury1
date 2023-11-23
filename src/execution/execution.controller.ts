@@ -20,6 +20,7 @@ export class ExecutionController {
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
      * @returns { Promise<{ output: string }> } - The output of the code
      * @throws { BadRequestException } - If the input is not valid base64 encoded
+     * @throws { BadRequestException } - If the code is not safe to execute
      */
     @Post('/python')
     async executePython(
@@ -47,6 +48,7 @@ export class ExecutionController {
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
      * @returns { Promise<{ output: string }> } - The output of the code
      * @throws { BadRequestException } - If the input is not valid base64 encoded
+     * @throws { BadRequestException } - If the code is not safe to execute
      */
     @Post('/python-project')
     async executePythonProject(
@@ -73,6 +75,7 @@ export class ExecutionController {
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
      * @returns { Promise<{ output: string }> } - The output of the code
      * @throws { BadRequestException } - If the input is not valid base64 encoded
+     * @throws { BadRequestException } - If the code is not safe to execute
      */
     @Post('/java')
     async executeJava(
@@ -80,7 +83,16 @@ export class ExecutionController {
         @Query('isInputBase64', new DefaultValuePipe(true), ParseBoolPipe) isInputBase64: boolean,
         @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
     ): Promise<{ output: string }> {
-        const output = await this.executionService.runJavaCode(code, isInputBase64, shouldOutputBase64);
+        let output: string;
+
+        try {
+            output = await this.executionService.runJavaCode(code, isInputBase64, shouldOutputBase64);
+        }
+        catch (error) {
+            throw new BadRequestException(error.message);
+        }
+
+        console.log("output: ", output);
         return { output };
     }
 
@@ -91,13 +103,23 @@ export class ExecutionController {
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
      * @returns { Promise<{ output: string }> } - The output of the code
      * @throws { BadRequestException } - If the input is not valid base64 encoded
+     * @throws { BadRequestException } - If the code is not safe to execute
      */
     @Post('/java-project')
     async executeJavaProject(
         @Body() body: { mainClassName: string; files: Record<string, string> },
         @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
     ): Promise<{ output: string }> {
-        const output = await this.executionService.runJavaProject(body.mainClassName, body.files, shouldOutputBase64);
+        let output: string;
+
+        try {
+            output = await this.executionService.runJavaProject(body.mainClassName, body.files, shouldOutputBase64);
+        }
+        catch (error) {
+            throw new BadRequestException(error.message);
+        }
+
+        console.log("output: ", output);
         return { output };
     }
 }
