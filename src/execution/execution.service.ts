@@ -279,8 +279,8 @@ export class ExecutionService {
 
     /**
      * Runs the given java project code in a docker container
-     * @param { string } mainFile - The main file of the project (base64 encoded content)
-     * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
+     * @param { string } mainClassName - The main file of the project (base64 encoded content)
+     * @param { Record<string, string> } files - The additional files of the project (filename: base64 encoded content)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
      * @returns { Promise<string> } - The output of the code
      * @throws { Error } - If the input is not valid base64 encoded
