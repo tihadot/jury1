@@ -1,0 +1,17 @@
+.code-executor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.output-window {
+    border: 1px solid black;
+    width: 80%;
+    height: 300px;
+    margin-bottom: 10px;
+    overflow-y: scroll;
+}
+
+input {
+    margin-right: 10px;
+}

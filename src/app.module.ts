@@ -6,10 +6,12 @@ import { PythonSanitizerService } from './python-sanitizer/python-sanitizer.serv
 import { JavaSanitizerService } from './java-sanitizer/java-sanitizer.service';
 import { JavaSanitizerModule } from './java-sanitizer/java-sanitizer.module';
 import { PythonSanitizerModule } from './python-sanitizer/python-sanitizer.module';
+import { ExecutionWsGateway } from './execution-ws/execution-ws.gateway';
+import { ExecutionWsService } from './execution-ws/execution-ws.service';
 
 @Module({
   imports: [ExecutionModule, JavaSanitizerModule, PythonSanitizerModule],
   controllers: [AppController],
-  providers: [AppService, PythonSanitizerService, JavaSanitizerService],
+  providers: [AppService, PythonSanitizerService, JavaSanitizerService, ExecutionWsGateway, ExecutionWsService],
 })
 export class AppModule {}

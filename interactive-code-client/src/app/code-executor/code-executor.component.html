@@ -1,0 +1,11 @@
+<div class="code-executor">
+  <button (click)="startSession()">Start Interactive Session</button>
+  <button (click)="disconnect()">End Session</button>
+
+  <div class="output-window">
+    <p *ngFor="let line of output">{{ line }}</p>
+  </div>
+
+  <input type="text" [(ngModel)]="input" placeholder="Enter input here">
+  <button (click)="sendInput()">Send Input</button>
+</div>
