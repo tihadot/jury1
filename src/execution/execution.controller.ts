@@ -69,6 +69,27 @@ export class ExecutionController {
     }
 
     /**
+     * Starts a python session
+     * @param { Record<string, string> } body.files - The files of the session (filename: base64 encoded content)
+     * @returns { Promise<{ sessionId: string }> } - The session ID of the started session
+     * @throws { BadRequestException } - If the input is not valid base64 encoded
+     */
+    @Post('/startPythonSession')
+    async startPythonSession(@Body() body: { files: Record<string, string> }): Promise<{ sessionId: string }> {
+        let sessionId: string;
+
+        try {
+            sessionId = await this.executionService.startPythonSession(body.files);
+        }
+        catch (error) {
+            throw new BadRequestException(error.message);
+        }
+
+        console.log("Python session started with ID:", sessionId);
+        return { sessionId };
+    }
+
+    /**
      * Runs the given java code in a docker container
      * @param { string } code - The code to run
      * @param { boolean } isInputBase64 - Whether the input is base64 encoded (default: true)

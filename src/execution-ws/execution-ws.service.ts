@@ -9,25 +9,68 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class ExecutionWsService {
     private docker = new Docker({ host: '127.0.0.1', port: 2375 });
+    // Map of session IDs to containers
+    private sessionContainers = new Map<string, Docker.Container>();
 
     /**
      * Starts an interactive session with the given image.
      * @param { string } image - The Docker image to start the session with.
+     * @param { string } tempDir - The temporary directory to mount as workspace.
      * @returns { Promise<Docker.Container> } - The started container.
      */
-    async startInteractiveSession(image: string): Promise<Docker.Container> {
+    async startInteractiveSession(image: string, tempDir: string): Promise<Docker.Container> {
         const container = await this.docker.createContainer({
             Image: image,
-            Cmd: ['python', '-i'],
+            Cmd: ['/bin/sh'],
             Tty: true,
             OpenStdin: true,
-            StdinOnce: false,
             AttachStdin: true,
             AttachStdout: true,
-            AttachStderr: true
+            AttachStderr: true,
+            WorkingDir: '/workspace',
+            HostConfig: {
+                Binds: [`${tempDir}:/workspace`]
+            }
         });
         await container.start();
         return container;
+    }
+
+    /**
+     * Signals the start of the program in the given container.
+     * @param { Docker.Container } container - The container to signal the start to.
+     */
+    async signalStartProgram(container: Docker.Container): Promise<void> {
+        this.sendInput(container, 'python main.py');
+    }
+
+    /**
+     * Restarts the program in the given container.
+     * @param { Docker.Container } container - The container to restart the program in.
+     */
+    async restartProgram(container: Docker.Container): Promise<void> {
+        this.sendInput(container, 'exit');
+        this.sendInput(container, 'python main.py');
+    }
+
+    /**
+     * Updates the files in the given container.
+     * @param { Docker.Container } container - The container to update the files in.
+     * @param { Record<string, string> } files - The files to update.
+     * @todo Check if the files are base64 encoded.
+     */
+    async updateFiles(container: Docker.Container, files: Record<string, string>): Promise<void> {
+        for (const [filename, content] of Object.entries(files)) {
+            const exec = await container.exec({
+                Cmd: ['sh', '-c', `echo "${content}" | base64 -d > /workspace/${filename}`],
+                AttachStdin: true,
+                AttachStdout: true,
+                AttachStderr: true,
+                Tty: true,
+            });
+
+            await exec.start({ Detach: false });
+        }
     }
 
     /**
@@ -58,5 +101,25 @@ export class ExecutionWsService {
         });
         stream.setEncoding('utf8');
         stream.on('data', callback);
+    }
+
+    /**
+     * Gets the container for the given session ID.
+     * @param { string } sessionId - The session ID to get the container for.
+     * @returns { Promise<Docker.Container | undefined> } - The container for the given session ID, or undefined if no container is registered.
+     */
+    async getContainer(sessionId: string): Promise<Docker.Container | undefined> {
+        console.log(`Retrieving container for session: ${sessionId}`);
+        return this.sessionContainers.get(sessionId);
+    }
+
+    /**
+     * Registers the given container for the given session ID.
+     * @param { string } sessionId - The session ID to register the container for.
+     * @param { Docker.Container } container - The container to register.
+     */
+    registerContainer(sessionId: string, container: Docker.Container): void {
+        this.sessionContainers.set(sessionId, container);
+        console.log(`Registering container for session: ${sessionId}`);
     }
 }

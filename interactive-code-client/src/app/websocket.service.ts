@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
+import { HttpClient } from '@angular/common/http';
 
 /**
  * This service is responsible for interacting with the server via WebSockets.
@@ -13,16 +14,32 @@ export class WebsocketService {
 
   /**
    * Creates a new WebsocketService.
+   * @param { HttpClient } http - The HttpClient to use.
    */
-  constructor() {
-    this.socket = io(this.endpoint, { path: '/execute', transports: ['websocket'] });
+  constructor(
+    private http: HttpClient
+  ) {
+    this.socket = io(this.endpoint, { path: '/ws-execute', transports: ['websocket'] });
   }
 
   /**
    * Starts a new session.
    */
   startSession(): void {
-    this.socket.emit('startSession');
+    // Get sessionId from server
+    this.http.post<{ sessionId: string }>(`${this.endpoint}/execute/startPythonSession`,
+      {
+        files: {
+          'main.py': 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0CgpkZWYgbWFpbigpOgogICAgdmFsID0gaW5wdXQoIkVudGVyIHlvdXIgdmFsdWU6ICIpCiAgICBwcmludChncmVldCh2YWwpKQoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIG1haW4oKQ==',
+          'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOgogICAgcmV0dXJuIGYiSGVsbG8sIHtuYW1lfSEi'
+        }
+      },
+    ).subscribe(data => {
+      console.log('Got sessionId from server:', data.sessionId);
+      // Send sessionId to server
+      this.socket.emit('startSession', data.sessionId);
+      this.socket.emit('startProgram');
+    });
   }
 
   /**
@@ -39,6 +56,8 @@ export class WebsocketService {
    */
   onOutput(callback: (data: string) => void): void {
     this.socket.on('output', callback);
+    this.socket.on('programStarted', callback);
+    this.socket.on('programRestarted', callback);
   }
 
   /**

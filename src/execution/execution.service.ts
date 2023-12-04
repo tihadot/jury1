@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
 import { PythonSanitizerService } from '../python-sanitizer/python-sanitizer.service';
 import { JavaSanitizerService } from '../java-sanitizer/java-sanitizer.service';
-
+import { ExecutionWsService } from '../execution-ws/execution-ws.service';
 
 /**
  * @class ExecutionService - Service that handles the execution of code
@@ -19,10 +19,12 @@ export class ExecutionService {
      * Creates an instance of ExecutionService.
      * @param { PythonSanitizerService } pythonSanitizerService - The python sanitizer service
      * @param { JavaSanitizerService } javaSanitizerService - The java sanitizer service
+     * @param { ExecutionWsService } executionWsService - The execution websocket service
      */
     constructor(
         private readonly pythonSanitizerService: PythonSanitizerService,
-        private readonly javaSanitizerService: JavaSanitizerService
+        private readonly javaSanitizerService: JavaSanitizerService,
+        private readonly executionWsService: ExecutionWsService
     ) {
         // this.docker = new Docker({ socketPath: '/var/run/docker.sock' });
         this.docker = new Docker({ host: '127.0.0.1', port: 2375 });
@@ -193,6 +195,36 @@ export class ExecutionService {
 
             rmSync(tempDir, { recursive: true, force: true });
         }
+    }
+
+    /**
+     * Starts a python session
+     * @param { Record<string, string> } files - The files of the session (filename: base64 encoded content)
+     * @returns { Promise<string> } - The session ID of the started session
+     * @throws { Error } - If the input is not valid base64 encoded
+     */
+    async startPythonSession(files: Record<string, string>): Promise<string> {
+        const sessionId = uuidv4();
+        const tempDir = join(__dirname, 'temp', sessionId);
+        mkdirSync(tempDir, { recursive: true });
+
+        // Decode and save files
+        Object.entries(files).forEach(([filename, content]) => {
+            if (!this.isValidBase64(content)) {
+                throw new Error('Input is not valid base64 encoded');
+            }
+
+            const filePath = join(tempDir, filename);
+            writeFileSync(filePath, Buffer.from(content, 'base64').toString('utf-8'));
+        });
+
+        // Start Docker container
+        const container = await this.executionWsService.startInteractiveSession('python:3.12.0-alpine', tempDir);
+
+        // Register container
+        this.executionWsService.registerContainer(sessionId, container);
+
+        return sessionId; // Return the session ID to the client
     }
 
     /**

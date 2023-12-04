@@ -8,9 +8,10 @@ import { JavaSanitizerModule } from './java-sanitizer/java-sanitizer.module';
 import { PythonSanitizerModule } from './python-sanitizer/python-sanitizer.module';
 import { ExecutionWsGateway } from './execution-ws/execution-ws.gateway';
 import { ExecutionWsService } from './execution-ws/execution-ws.service';
+import { ExecutionWsModule } from './execution-ws/execution-ws.module';
 
 @Module({
-  imports: [ExecutionModule, JavaSanitizerModule, PythonSanitizerModule],
+  imports: [ExecutionModule, JavaSanitizerModule, PythonSanitizerModule, ExecutionWsModule],
   controllers: [AppController],
   providers: [AppService, PythonSanitizerService, JavaSanitizerService, ExecutionWsGateway, ExecutionWsService],
 })
