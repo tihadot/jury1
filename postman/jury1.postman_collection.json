@@ -179,6 +179,34 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Start Python Session",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"files\":\r\n    {\r\n        \"main.py\": \"ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0CgpkZWYgbWFpbigpOgogICAgdmFsID0gaW5wdXQoIkVudGVyIHlvdXIgdmFsdWU6ICIpCiAgICBwcmludChncmVldCh2YWwpKQoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIG1haW4oKQ==\",\r\n        \"helper.py\":\r\n        \"ZGVmIGdyZWV0KG5hbWUpOgogICAgcmV0dXJuIGYiSGVsbG8sIHtuYW1lfSEi\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/execute/startPythonSession",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"startPythonSession"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
