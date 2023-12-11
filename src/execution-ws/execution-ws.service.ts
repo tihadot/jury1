@@ -37,29 +37,20 @@ export class ExecutionWsService {
     }
 
     /**
-     * Signals the start of the program in the given container.
+     * Signals the start of the program in the given container. The program is assumed to be called main.py.
      * @param { Docker.Container } container - The container to signal the start to.
      */
-    async signalStartProgram(container: Docker.Container): Promise<void> {
+    async startProgram(container: Docker.Container): Promise<void> {
         this.sendInput(container, 'python main.py');
     }
 
     /**
-     * Restarts the program in the given container.
-     * @param { Docker.Container } container - The container to restart the program in.
-     */
-    async restartProgram(container: Docker.Container): Promise<void> {
-        this.sendInput(container, 'exit');
-        this.sendInput(container, 'python main.py');
-    }
-
-    /**
-     * Updates the files in the given container.
-     * @param { Docker.Container } container - The container to update the files in.
+     * Creates or updates the files in the given container.
+     * @param { Docker.Container } container - The container to create or update the files in.
      * @param { Record<string, string> } files - The files to update.
      * @todo Check if the files are base64 encoded.
      */
-    async updateFiles(container: Docker.Container, files: Record<string, string>): Promise<void> {
+    async upsertFiles(container: Docker.Container, files: Record<string, string>): Promise<void> {
         for (const [filename, content] of Object.entries(files)) {
             const exec = await container.exec({
                 Cmd: ['sh', '-c', `echo "${content}" | base64 -d > /workspace/${filename}`],

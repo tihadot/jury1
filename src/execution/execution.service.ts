@@ -198,25 +198,14 @@ export class ExecutionService {
     }
 
     /**
-     * Starts a python session
+     * Starts an interactive python session
      * @param { Record<string, string> } files - The files of the session (filename: base64 encoded content)
      * @returns { Promise<string> } - The session ID of the started session
-     * @throws { Error } - If the input is not valid base64 encoded
      */
-    async startPythonSession(files: Record<string, string>): Promise<string> {
+    async startPythonSession(): Promise<string> {
         const sessionId = uuidv4();
         const tempDir = join(__dirname, 'temp', sessionId);
         mkdirSync(tempDir, { recursive: true });
-
-        // Decode and save files
-        Object.entries(files).forEach(([filename, content]) => {
-            if (!this.isValidBase64(content)) {
-                throw new Error('Input is not valid base64 encoded');
-            }
-
-            const filePath = join(tempDir, filename);
-            writeFileSync(filePath, Buffer.from(content, 'base64').toString('utf-8'));
-        });
 
         // Start Docker container
         const container = await this.executionWsService.startInteractiveSession('python:3.12.0-alpine', tempDir);

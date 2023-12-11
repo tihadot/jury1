@@ -27,18 +27,11 @@ export class WebsocketService {
    */
   startSession(): void {
     // Get sessionId from server
-    this.http.post<{ sessionId: string }>(`${this.endpoint}/execute/startPythonSession`,
-      {
-        files: {
-          'main.py': 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0CgpkZWYgbWFpbigpOgogICAgdmFsID0gaW5wdXQoIkVudGVyIHlvdXIgdmFsdWU6ICIpCiAgICBwcmludChncmVldCh2YWwpKQoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIG1haW4oKQ==',
-          'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOgogICAgcmV0dXJuIGYiSGVsbG8sIHtuYW1lfSEi'
-        }
-      },
+    this.http.post<{ sessionId: string }>(`${this.endpoint}/execute/startPythonSession`, {}
     ).subscribe(data => {
       console.log('Got sessionId from server:', data.sessionId);
       // Send sessionId to server
       this.socket.emit('startSession', data.sessionId);
-      this.socket.emit('startProgram');
     });
   }
 
@@ -51,13 +44,28 @@ export class WebsocketService {
   }
 
   /**
+   * Creates or updates the files in the Docker container.
+   * @param { Record<string, string> } files - The files to update.
+   */
+  upsertFiles(files: string): void {
+    this.socket.emit('upsertFiles', files);
+  }
+
+  /**
+   * Starts the program in the Docker container.
+   */
+  startProgram(): void {
+    this.socket.emit('startProgram');
+  }
+
+  /**
    * Sets up a listener for the output from the server.
    * @param { (data: string) => void } callback - The callback to call when new output is available.
    */
   onOutput(callback: (data: string) => void): void {
     this.socket.on('output', callback);
     this.socket.on('programStarted', callback);
-    this.socket.on('programRestarted', callback);
+    this.socket.on('filesUpdated', callback);
   }
 
   /**

@@ -62,14 +62,14 @@ export class ExecutionWsGateway {
   }
 
   /**
-   * Handles the startProgram event that signals the container to start the program.
+   * Handles the startProgram event that signals the container to (re-)start the program. The program is assumed to be called main.py.
    * @param { Socket } client - The client that sent the event.
    */
   @SubscribeMessage('startProgram')
   async handleStartProgram(@ConnectedSocket() client: Socket) {
     const container = this.sessions.get(client.id);
     if (container) {
-      await this.executionWsService.signalStartProgram(container);
+      await this.executionWsService.startProgram(container);
       client.emit('programStarted', 'Program execution has started.');
     } else {
       client.emit('error', 'Session not found');
@@ -77,35 +77,16 @@ export class ExecutionWsGateway {
   }
 
   /**
-   * Handles the restartProgram event that signals the container to restart the program.
+   * Handles the upsertFiles event that signals the container to create or update the given files.
+   * @param data - The data containing the files to create or update.
    * @param { Socket } client - The client that sent the event.
    */
-  @SubscribeMessage('restartProgram')
-  async handleRestartProgram(@ConnectedSocket() client: Socket) {
+  @SubscribeMessage('upsertFiles')
+  async handleFileUpdate(@MessageBody() data, @ConnectedSocket() client: Socket) {
     const container = this.sessions.get(client.id);
     if (container) {
-      await this.executionWsService.restartProgram(container);
-      client.emit('programRestarted', 'Program has been restarted.');
-    } else {
-      client.emit('error', 'Session not found');
-    }
-  }
-
-  /**
-   * Handles the updateFiles event that signals the container to update its files.
-   * @param { { sessionId: string, files: Record<string, string> } } data - The data containing the session ID and the files to update.
-   * @param { Socket } client - The client that sent the event.
-   */
-  @SubscribeMessage('updateFiles')
-  async handleFileUpdate(@MessageBody() data: { sessionId: string, files: Record<string, string> }, @ConnectedSocket() client: Socket) {
-    const container = this.sessions.get(data.sessionId);
-    if (container) {
-      await this.executionWsService.updateFiles(container, data.files);
+      await this.executionWsService.upsertFiles(container, JSON.parse(data).files);
       client.emit('filesUpdated', 'Files have been updated.');
-
-      // Optionally restart the program after updating files
-      await this.executionWsService.restartProgram(container);
-      client.emit('programRestarted', 'Program has been restarted.');
     } else {
       client.emit('error', 'Session not found');
     }

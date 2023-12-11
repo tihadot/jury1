@@ -12,6 +12,9 @@
     overflow-y: scroll;
 }
 
-input {
-    margin-right: 10px;
+textarea {
+    border: 1px solid black;
+    width: 80%;
+    height: 150px;
+    resize: none;
 }

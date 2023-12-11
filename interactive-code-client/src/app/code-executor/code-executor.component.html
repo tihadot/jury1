@@ -6,6 +6,15 @@
     <p *ngFor="let line of output">{{ line }}</p>
   </div>
 
-  <input type="text" [(ngModel)]="input" placeholder="Enter input here">
-  <button (click)="sendInput()">Send Input</button>
+  <textarea [(ngModel)]="input" placeholder="Enter input here"></textarea>
+  <div>
+    <button (click)="sendInput()">Send Input</button>
+    <button (click)="upsertFiles()">Send Input as Files</button>
+    <button (click)="startProgram()">Start Program</button>
+  </div>
+
+  <h3>Example usage of how to input files as text (content has to be base64 encoded)</h3>
+  <pre>
+    <code [innerHTML]="code"></code>
+  </pre>
 </div>
