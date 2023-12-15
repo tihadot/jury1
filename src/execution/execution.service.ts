@@ -15,6 +15,12 @@ import { JavaSanitizerService } from '../java-sanitizer/java-sanitizer.service';
 export class ExecutionService {
     private docker: Docker;
 
+    // sets the docker runtime to be used (runc (default), runsc, runsc-debug)
+    private RUNTIME: string =
+        'runc';
+    //    'runsc';
+    //    'runsc-debug';
+
     /**
      * Creates an instance of ExecutionService.
      * @param { PythonSanitizerService } pythonSanitizerService - The python sanitizer service
@@ -58,6 +64,9 @@ export class ExecutionService {
                 Image: 'python:3.12.0-alpine',
                 Cmd: ['python', '-c', code],
                 Tty: false,
+                HostConfig: {
+                    Runtime: this.RUNTIME,
+                },
             });
 
             await container.start();
@@ -154,6 +163,7 @@ export class ExecutionService {
                 HostConfig: {
                     // Bind mount the temp directory to the container
                     Binds: [`${tempDir}:/usr/src/app`],
+                    Runtime: this.RUNTIME,
                 },
             });
 
@@ -236,6 +246,7 @@ export class ExecutionService {
                 HostConfig: {
                     // Bind mount the temp directory to the container
                     Binds: [`${tempDir}:/usr/src/app`],
+                    Runtime: this.RUNTIME,
                 },
             });
 
@@ -329,6 +340,7 @@ export class ExecutionService {
                 HostConfig: {
                     // Bind mount the temp directory to the container
                     Binds: [`${tempDir}:/usr/src/app`],
+                    Runtime: this.RUNTIME,
                 },
             });
 
