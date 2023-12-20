@@ -69,6 +69,34 @@ export class ExecutionController {
     }
 
     /**
+     * Runs the given python assignment code in a docker container and runs the provided tests
+     * @param { string } body.mainFile - The main file of the project (base64 encoded content)
+     * @param { Record<string, string> } body.additionalFiles - The additional files of the project (filename: base64 encoded content)
+     * @param { Record<string, string> } body.testFiles - The test files of the project (filename: base64 encoded content)
+     * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
+     * @returns { Promise<{ output: string, testsPassed: boolean }> } - The output of the code and whether the tests passed
+     * @throws { BadRequestException } - If the input is not valid base64 encoded
+     * @throws { BadRequestException } - If the code is not safe to execute
+     */
+    @Post('/python-assignment')
+    async executePythonAssignment(
+        @Body() body: { mainFile: string; additionalFiles: Record<string, string>; testFiles: Record<string, string> },
+        @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
+    ): Promise<{ output: string, testsPassed: boolean } | BadRequestException> {
+        let output: { output: string; testsPassed: boolean };
+
+        try {
+            output = await this.executionService.runPythonAssignment(body.mainFile, body.additionalFiles, body.testFiles, shouldOutputBase64);
+        }
+        catch (error) {
+            throw new BadRequestException(error.message);
+        }
+
+        console.log("output: ", output);
+        return { output: output.output, testsPassed: output.testsPassed };
+    }
+
+    /**
      * Runs the given java code in a docker container
      * @param { string } code - The code to run
      * @param { boolean } isInputBase64 - Whether the input is base64 encoded (default: true)
@@ -121,5 +149,33 @@ export class ExecutionController {
 
         console.log("output: ", output);
         return { output };
+    }
+
+    /**
+     * Runs the given java assignment code in a docker container and runs the provided tests
+     * @param { string } body.mainClassName - The main class name of the project
+     * @param { Record<string, string> } body.files - The files of the project (filename: base64 encoded content)
+     * @param { Record<string, string> } body.testFiles - The test files of the project (filename: base64 encoded content)
+     * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
+     * @returns { Promise<{ output: string, testsPassed: boolean }> } - The output of the code and whether the tests passed
+     * @throws { BadRequestException } - If the input is not valid base64 encoded
+     * @throws { BadRequestException } - If the code is not safe to execute
+     */
+    @Post('/java-assignment')
+    async executeJavaAssignment(
+        @Body() body: { mainClassName: string; files: Record<string, string>; testFiles: Record<string, string> },
+        @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
+    ): Promise<{ output: string, testsPassed: boolean }> {
+        let output: { output: string; testsPassed: boolean };
+
+        try {
+            output = await this.executionService.runJavaAssignment(body.mainClassName, body.files, body.testFiles, shouldOutputBase64);
+        }
+        catch (error) {
+            throw new BadRequestException(error.message);
+        }
+
+        console.log("output: ", output);
+        return { output: output.output, testsPassed: output.testsPassed };
     }
 }
