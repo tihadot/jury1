@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionService } from './execution.service';
+import { ExecutionWsService } from '../execution-ws/execution-ws.service';
 import { PythonSanitizerService } from '../python-sanitizer/python-sanitizer.service';
 import { JavaSanitizerService } from '../java-sanitizer/java-sanitizer.service';
 
 
 describe('ExecutionService', () => {
     let service: ExecutionService;
+    let executionWsService: ExecutionWsService;
     let pythonSanitizerService: PythonSanitizerService;
     let javaSanitizerService: JavaSanitizerService;
 
@@ -21,12 +23,14 @@ describe('ExecutionService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 ExecutionService,
+                { provide: ExecutionWsService, useValue: {} },
                 { provide: PythonSanitizerService, useValue: mockPythonSanitizerService },
                 { provide: JavaSanitizerService, useValue: mockJavaSanitizerService },
             ],
         }).compile();
 
         service = module.get<ExecutionService>(ExecutionService);
+        executionWsService = module.get<ExecutionWsService>(ExecutionWsService);
         pythonSanitizerService = module.get<PythonSanitizerService>(PythonSanitizerService);
         javaSanitizerService = module.get<JavaSanitizerService>(JavaSanitizerService);
     });
