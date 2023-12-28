@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
 import { ExecutionModule } from './execution/execution.module';
 import { PythonSanitizerService } from './python-sanitizer/python-sanitizer.service';
 import { JavaSanitizerService } from './java-sanitizer/java-sanitizer.service';
@@ -11,8 +12,8 @@ import { ExecutionWsService } from './execution-ws/execution-ws.service';
 import { ExecutionWsModule } from './execution-ws/execution-ws.module';
 
 @Module({
-  imports: [ExecutionModule, JavaSanitizerModule, PythonSanitizerModule, ExecutionWsModule],
+  imports: [ConfigModule.forRoot(), ExecutionModule, JavaSanitizerModule, PythonSanitizerModule, ExecutionWsModule],
   controllers: [AppController],
   providers: [AppService, PythonSanitizerService, JavaSanitizerService, ExecutionWsGateway, ExecutionWsService],
 })
-export class AppModule {}
+export class AppModule { }
