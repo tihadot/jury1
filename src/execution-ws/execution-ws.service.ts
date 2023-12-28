@@ -8,9 +8,30 @@ import { Injectable } from '@nestjs/common';
  */
 @Injectable()
 export class ExecutionWsService {
-    private docker = new Docker({ host: '127.0.0.1', port: 2375 });
+    private docker: Docker;
+
+    // sets the docker runtime to be used (runc (default), runsc, runsc-debug)
+    private runtime: string = process.env.DOCKER_RUNTIME ||
+        'runc';
+    //    'runsc';
+    //    'runsc-debug';
+
     // Map of session IDs to containers
     private sessionContainers = new Map<string, Docker.Container>();
+
+    /**
+     * Creates an instance of ExecutionWsService.
+     */
+    constructor() {
+        // Choose the correct Docker configuration based on the environment
+        const isWindows = process.platform === "win32";
+        this.docker = new Docker(isWindows ? { socketPath: '//./pipe/docker_engine' } : { socketPath: '/var/run/docker.sock' });
+
+        // Alternative configuration for Docker using TCP
+        // this.docker = new Docker({ host: '127.0.0.1', port: 2375 });
+
+        console.log('ExecutionWsService created');
+    }
 
     /**
      * Starts an interactive session with the given image.
@@ -27,9 +48,10 @@ export class ExecutionWsService {
             AttachStdin: true,
             AttachStdout: true,
             AttachStderr: true,
-            WorkingDir: '/workspace',
+            WorkingDir: '/usr/src/app',
             HostConfig: {
-                Binds: [`${tempDir}:/workspace`]
+                Binds: [`${tempDir}:/usr/src/app`],
+                Runtime: this.runtime,
             }
         });
         await container.start();
@@ -53,7 +75,7 @@ export class ExecutionWsService {
     async upsertFiles(container: Docker.Container, files: Record<string, string>): Promise<void> {
         for (const [filename, content] of Object.entries(files)) {
             const exec = await container.exec({
-                Cmd: ['sh', '-c', `echo "${content}" | base64 -d > /workspace/${filename}`],
+                Cmd: ['sh', '-c', `echo "${content}" | base64 -d > /usr/src/app/${filename}`],
                 AttachStdin: true,
                 AttachStdout: true,
                 AttachStderr: true,

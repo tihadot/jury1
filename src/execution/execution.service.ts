@@ -231,7 +231,7 @@ export class ExecutionService {
         mkdirSync(tempDir, { recursive: true });
 
         // Start Docker container
-        const container = await this.executionWsService.startInteractiveSession('python:3.12.0-alpine', tempDir);
+        const container = await this.executionWsService.startInteractiveSession(this.pythonImage, tempDir);
 
         // Register container
         this.executionWsService.registerContainer(sessionId, container);
