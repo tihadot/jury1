@@ -38,7 +38,8 @@ export class ExecutionWsGateway {
 
       // Setup to handle container's output
       this.executionWsService.setupContainerOutputListener(container, (data) => {
-        client.emit('output', data);
+        // Send output to client. Tries to strip ANSI escape sequences, based on https://stackoverflow.com/a/14693789
+        client.emit('output', data.replace(/(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])/g, ''));
       });
     } else {
       console.log(`No container found for session ID: ${sessionId}`);

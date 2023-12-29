@@ -29,8 +29,6 @@ export class ExecutionWsService {
 
         // Alternative configuration for Docker using TCP
         // this.docker = new Docker({ host: '127.0.0.1', port: 2375 });
-
-        console.log('ExecutionWsService created');
     }
 
     /**
