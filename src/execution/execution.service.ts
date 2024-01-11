@@ -4,6 +4,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
+import * as fs from 'fs';
 import { PythonSanitizerService } from '../python-sanitizer/python-sanitizer.service';
 import { JavaSanitizerService } from '../java-sanitizer/java-sanitizer.service';
 
@@ -23,6 +24,8 @@ export class ExecutionService {
 
     // The docker images to use for the different languages. Make sure that the images are available locally.
     private readonly pythonImage = process.env.DOCKER_IMAGE_PYTHON || 'python:3.12.0-alpine';
+    // The docker image to use for the python assignment execution. This image is based on the python image and has the required dependencies installed. The dockerfile for this image can be found in the Docker/python-unittest directory.
+    private readonly pythonUnittestImage = process.env.DOCKER_IMAGE_PYTHON_UNITTEST || 'python-unittest';
     private readonly javaImage = process.env.DOCKER_IMAGE_JAVA || 'openjdk:22-slim';
     // The docker image to use for the java assignment execution. This image is based on the openjdk image and has JUnit installed. The dockerfile for this image can be found in the Docker/java-junit directory.
     private readonly javaJunitImage = process.env.DOCKER_IMAGE_JAVA_JUNIT || 'java-junit';
@@ -148,38 +151,33 @@ export class ExecutionService {
     }
 
     /**
-     * Runs the given python assignment code in a docker container and runs the provided tests with unittest
-     * @param { string } mainFile - The main file of the project (base64 encoded content)
-     * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
-     * @param { Record<string, string> } testFiles - The test files of the project (filename: base64 encoded content)
-     * @param { boolean } outputBase64 - Whether the result should be base64 encoded
-     * @returns { Promise<{ output: string, testsPassed: boolean }> } - The output of the code and whether the tests passed
+     * Runs the tests for the given python assignment code in a docker container
+     * @param { Record<string, string> } files - The files of the project (filename: base64 encoded content)
+     * @param { Record<string, string> } testFiles - The test files of the project (filename (pattern: test_*.py): base64 encoded content)
+     * @returns { Promise<{ testResults: JSON, testsPassed: boolean, score: number }> } - The test results, whether the tests passed and the score (number of passed tests / total number of tests)
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
-    async runPythonAssignment(mainFile: string, additionalFiles: Record<string, string>, testFiles: Record<string, string>, outputBase64: boolean): Promise<{ output: string, testsPassed: boolean }> {
+    async runPythonAssignment(files: Record<string, string>, testFiles: Record<string, string>): Promise<{ testResults: JSON, testsPassed: boolean, score: number }> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(tmpdir(), 'jury1', executionId);
         mkdirSync(tempDir, { recursive: true });
 
-        // Decode and save the main file
-        await this.handleFileOperations(tempDir, { 'main.py': mainFile }, this.pythonSanitizerService);
-        // Decode and save additional files
-        await this.handleFileOperations(tempDir, additionalFiles, this.pythonSanitizerService);
+        // Decode and save files
+        await this.handleFileOperations(tempDir, files, this.pythonSanitizerService);
         // Decode and save test files
         await this.handleFileOperations(tempDir, testFiles);
 
         let container: Docker.Container;
 
         const containerOptions: Docker.ContainerCreateOptions = {
-            Image: this.pythonImage,
-            // Runs the main file, then runs the tests discovered by unittest and outputs the results.
+            Image: this.pythonUnittestImage,
+            // Runs the tests discovered by unittest
             Cmd: ['sh', '-c', `
-            python main.py &&
-            python -m unittest discover -s . &&
-            (echo "Tests passed"; exit 0) ||
-            (echo "Tests failed"; exit 1)
+            python /custom-test-runner/json_test_runner.py &&
+            (exit 0) ||
+            (exit 1)
             `],
             WorkingDir: '/usr/src/app',
             Tty: false,
@@ -191,25 +189,31 @@ export class ExecutionService {
         };
 
         let testsPassed = false;
+        let score = 0;
 
         try {
             // Create and start the Docker container
             container = await this.createAndStartContainer(containerOptions);
 
-            // Fetch the output
-            let output = await this.getContainerOutput(container);
+            // Wait for the container to finish executing
+            const containerEndStatus = await container.wait();
 
-            // Encode the output if it should be base64 encoded
-            if (outputBase64) {
-                output = Buffer.from(output).toString('base64');
-            }
+            // Read the test results from the file
+            const resultsPath = `${tempDir}/test-results.json`;
+            const testResults = fs.readFileSync(resultsPath, 'utf8');
+            const jsonResults = JSON.parse(testResults);
 
-            // Inspect the container to get the exit code
-            const inspectData = await container.inspect();
-            const exitCode = inspectData.State.ExitCode;
-            testsPassed = exitCode === 0;
+            // Calculate the number of passed tests
+            const passedTests = jsonResults.filter((result: { status: string; }) => result.status === "SUCCESSFUL").length;
+            const totalTests = jsonResults.length;
 
-            return { output, testsPassed };
+            // Update testsPassed based on all tests being successful
+            testsPassed = passedTests === totalTests;
+
+            // Calculate score as a percentage
+            score = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
+
+            return { testResults: jsonResults, testsPassed, score };
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
             await this.stopAndRemoveContainer(container);
@@ -325,16 +329,14 @@ export class ExecutionService {
     }
 
     /**
-     * Runs the given java assignment code in a docker container and runs the provided tests with JUnit
-     * @param { string } mainClassName - The main file of the project (base64 encoded content)
+     * Runs the tests for the given java assignment code in a docker container
      * @param { Record<string, string> } files - The additional files of the project (filename: base64 encoded content)
      * @param { Record<string, string> } testFiles - The test files of the project (filename: base64 encoded content)
-     * @param { boolean } outputBase64 - Whether the result should be base64 encoded
-     * @returns { Promise<{ output: string, testsPassed: boolean }> } - The output of the code and whether the tests passed
+     * @returns { Promise<{ testResults: JSON, testsPassed: boolean, score: number }> } - The test results, whether the tests passed and the score (number of passed tests / total number of tests)
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
-    async runJavaAssignment(mainClassName: string, files: Record<string, string>, testFiles: Record<string, string>, outputBase64: boolean): Promise<{ output: string, testsPassed: boolean }> {
+    async runJavaAssignment(files: Record<string, string>, testFiles: Record<string, string>): Promise<{ testResults: JSON, testsPassed: boolean, score: number }> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(tmpdir(), 'jury1', executionId);
@@ -349,13 +351,12 @@ export class ExecutionService {
 
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.javaJunitImage,
-            // Finds all java files in the current directory structure and compiles them, then runs the main class. Then runs the tests with JUnit and outputs the results.
+            // Finds all java files in the current directory structure and compiles them. Then runs the tests with JUnit.
             Cmd: ['sh', '-c', `
             find . -name "*.java" -exec javac -cp .:/junit/* {} + &&
-            java -cp .:/junit/* ${mainClassName} &&
-            java -cp .:/junit/* org.junit.platform.console.ConsoleLauncher --scan-classpath --disable-ansi-colors --disable-banner --details=tree &&
-            (echo "Tests passed"; exit 0) ||
-            (echo "Tests failed"; exit 1)
+            java -cp .:/junit/* org.junit.platform.console.ConsoleLauncher --scan-classpath --disable-ansi-colors --disable-banner --details=none &&
+            (exit 0) ||
+            (exit 1)
             `],
             WorkingDir: '/usr/src/app',
             Tty: false,
@@ -367,25 +368,31 @@ export class ExecutionService {
         };
 
         let testsPassed = false;
+        let score = 0;
 
         try {
             // Create and start the Docker container
             container = await this.createAndStartContainer(containerOptions);
 
-            // Fetch the output
-            let output = await this.getContainerOutput(container);
+            // Wait for the container to finish executing
+            const containerEndStatus = await container.wait();
 
-            // Encode the output if it should be base64 encoded
-            if (outputBase64) {
-                output = Buffer.from(output).toString('base64');
-            }
+            // Read the test results from the file
+            const resultsPath = `${tempDir}/test-results.json`;
+            const testResults = fs.readFileSync(resultsPath, 'utf8');
+            const jsonResults = JSON.parse(testResults);
 
-            // Inspect the container to get the exit code
-            const inspectData = await container.inspect();
-            const exitCode = inspectData.State.ExitCode;
-            testsPassed = exitCode === 0;
+            // Calculate the number of passed tests
+            const passedTests = jsonResults.filter((result: { status: string; }) => result.status === "SUCCESSFUL").length;
+            const totalTests = jsonResults.length;
 
-            return { output, testsPassed };
+            // Update testsPassed based on all tests being successful
+            testsPassed = passedTests === totalTests;
+
+            // Calculate score as a percentage
+            score = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
+
+            return { testResults: jsonResults, testsPassed, score };
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
             await this.stopAndRemoveContainer(container);

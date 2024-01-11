@@ -61,22 +61,13 @@ describe('ExecutionController', () => {
     });
 
     describe('executePythonAssignment', () => {
-        it('should return the output from the execution service with default base64 setting', async () => {
-            const mockBody = { mainFile: 'encoded_main_file', additionalFiles: { 'file1.py': 'encoded_file1_content', 'file2.py': 'encoded_file2_content' }, testFiles: { 'test1.py': 'encoded_test1_content', 'test2.py': 'encoded_test2_content' } };
-            const expectedResult = { output: 'Encoded output\n', testsPassed: true };
+        it('should return the output from the execution service', async () => {
+            const mockBody = { files: { 'file1.py': 'encoded_file1_content', 'file2.py': 'encoded_file_2_content' }, testFiles: { 'test1.py': 'encoded_test1_content', 'test2.py': 'encoded_test2_content' } };
+            const expectedResult = { testResults: JSON.parse('[ { "test": "test1", "status": "SUCCESSFUL" }, { "test": "test2", "status": "SUCCESSFUL" } ]'), testsPassed: true, score: 100 };
             jest.spyOn(executionService, 'runPythonAssignment').mockResolvedValue(expectedResult);
 
-            expect(await controller.executePythonAssignment(mockBody, true)).toEqual(expectedResult);
-            expect(executionService.runPythonAssignment).toHaveBeenCalledWith(mockBody.mainFile, mockBody.additionalFiles, mockBody.testFiles, true);
-        });
-
-        it('should handle non-base64 output for projects', async () => {
-            const mockBody = { mainFile: 'encoded_main_file', additionalFiles: { 'file1.py': 'encoded_file1_content', 'file2.py': 'encoded_file2_content' }, testFiles: { 'test1.py': 'encoded_test1_content', 'test2.py': 'encoded_test2_content' } };
-            const expectedResult = { output: 'Project output\n', testsPassed: true };
-            jest.spyOn(executionService, 'runPythonAssignment').mockResolvedValue(expectedResult);
-
-            expect(await controller.executePythonAssignment(mockBody, false)).toEqual(expectedResult);
-            expect(executionService.runPythonAssignment).toHaveBeenCalledWith(mockBody.mainFile, mockBody.additionalFiles, mockBody.testFiles, false);
+            expect(await controller.executePythonAssignment(mockBody)).toEqual(expectedResult);
+            expect(executionService.runPythonAssignment).toHaveBeenCalledWith(mockBody.files, mockBody.testFiles);
         });
     });
 
@@ -121,22 +112,13 @@ describe('ExecutionController', () => {
     });
 
     describe('executeJavaAssignment', () => {
-        it('should return the output from the execution service with default base64 setting', async () => {
-            const mockBody = { mainClassName: 'com.jury1.Main', files: { 'file1.java': 'encoded_file1_content', 'file2.java': 'encoded_file_2_content' }, testFiles: { 'test1.java': 'encoded_test1_content', 'test2.java': 'encoded_test2_content' } };
-            const expectedResult = { output: 'Encoded output\n', testsPassed: true };
+        it('should return the output from the execution service', async () => {
+            const mockBody = { files: { 'file1.java': 'encoded_file1_content', 'file2.java': 'encoded_file_2_content' }, testFiles: { 'test1.java': 'encoded_test1_content', 'test2.java': 'encoded_test2_content' } };
+            const expectedResult = { testResults: JSON.parse('[ { "test": "test1()", "status": "SUCCESSFUL" }, { "test": "test2()", "status": "SUCCESSFUL" } ]'), testsPassed: true, score: 100 };
             jest.spyOn(executionService, 'runJavaAssignment').mockResolvedValue(expectedResult);
 
-            expect(await controller.executeJavaAssignment(mockBody, true)).toEqual(expectedResult);
-            expect(executionService.runJavaAssignment).toHaveBeenCalledWith(mockBody.mainClassName, mockBody.files, mockBody.testFiles, true);
-        });
-
-        it('should handle non-base64 output for projects', async () => {
-            const mockBody = { mainClassName: 'com.jury1.Main', files: { 'file1.java': 'encoded_file1_content', 'file2.java': 'encoded_file_2_content' }, testFiles: { 'test1.java': 'encoded_test1_content', 'test2.java': 'encoded_test2_content' } };
-            const expectedResult = { output: 'Project output\n', testsPassed: true };
-            jest.spyOn(executionService, 'runJavaAssignment').mockResolvedValue(expectedResult);
-
-            expect(await controller.executeJavaAssignment(mockBody, false)).toEqual(expectedResult);
-            expect(executionService.runJavaAssignment).toHaveBeenCalledWith(mockBody.mainClassName, mockBody.files, mockBody.testFiles, false);
+            expect(await controller.executeJavaAssignment(mockBody)).toEqual(expectedResult);
+            expect(executionService.runJavaAssignment).toHaveBeenCalledWith(mockBody.files, mockBody.testFiles);
         });
     });
 });

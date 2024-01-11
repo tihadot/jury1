@@ -144,33 +144,49 @@ describe('ExecutionService', () => {
      * This test requires the docker daemon to be running
      */
     describe('runPythonAssignment', () => {
-        it('should return the output of the assignment and the test result for a successful test', async () => {
-            const mockMainFile = 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K';
-            const mockAdditionalFiles = { 'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOg0KICAgIHJldHVybiBmIkhlbGxvLCB7bmFtZX0hIg0K' };
+        it('should return the test results for a successful test with a score of 100', async () => {
+            const mockFiles = {
+                'main.py': 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K',
+                'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOg0KICAgIHJldHVybiBmIkhlbGxvLCB7bmFtZX0hIg0K'
+            };
             const mockTestFiles = {
                 'test_main.py': 'aW1wb3J0IHVuaXR0ZXN0CmltcG9ydCBpbwppbXBvcnQgc3lzCmZyb20gbWFpbiBpbXBvcnQgbWFpbgoKCmNsYXNzIFRlc3RNYWluKHVuaXR0ZXN0LlRlc3RDYXNlKToKICAgIGRlZiB0ZXN0X21haW5fb3V0cHV0KHNlbGYpOgogICAgICAgIGNhcHR1cmVkX291dHB1dCA9IGlvLlN0cmluZ0lPKCkgICMgQ3JlYXRlIFN0cmluZ0lPIG9iamVjdAogICAgICAgIHN5cy5zdGRvdXQgPSBjYXB0dXJlZF9vdXRwdXQgICMgUmVkaXJlY3Qgc3Rkb3V0CiAgICAgICAgbWFpbigpICAjIENhbGwgdGhlIG1haW4gZnVuY3Rpb24KICAgICAgICBzeXMuc3Rkb3V0ID0gc3lzLl9fc3Rkb3V0X18gICMgUmVzZXQgcmVkaXJlY3QKICAgICAgICBzZWxmLmFzc2VydEVxdWFsKGNhcHR1cmVkX291dHB1dC5nZXR2YWx1ZSgpLnN0cmlwKCksICJIZWxsbywgd29ybGQhIikKCgppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOgogICAgdW5pdHRlc3QubWFpbigpCg==',
-                'test_helperpy': 'aW1wb3J0IHVuaXR0ZXN0CmZyb20gaGVscGVyIGltcG9ydCBncmVldAoKCmNsYXNzIFRlc3RIZWxwZXIodW5pdHRlc3QuVGVzdENhc2UpOgogICAgZGVmIHRlc3RfZ3JlZXQoc2VsZik6CiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChncmVldCgid29ybGQiKSwgIkhlbGxvLCB3b3JsZCEiKQogICAgICAgIHNlbGYuYXNzZXJ0RXF1YWwoZ3JlZXQoInVzZXIiKSwgIkhlbGxvLCB1c2VyISIpCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIHVuaXR0ZXN0Lm1haW4oKQo='
+                'test_helper.py': 'aW1wb3J0IHVuaXR0ZXN0CmZyb20gaGVscGVyIGltcG9ydCBncmVldAoKCmNsYXNzIFRlc3RIZWxwZXIodW5pdHRlc3QuVGVzdENhc2UpOgogICAgZGVmIHRlc3RfZ3JlZXQoc2VsZik6CiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChncmVldCgid29ybGQiKSwgIkhlbGxvLCB3b3JsZCEiKQogICAgICAgIHNlbGYuYXNzZXJ0RXF1YWwoZ3JlZXQoInVzZXIiKSwgIkhlbGxvLCB1c2VyISIpCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIHVuaXR0ZXN0Lm1haW4oKQo='
             };
-            const expectedTestResult = true;
-            const result = await service.runPythonAssignment(mockMainFile, mockAdditionalFiles, mockTestFiles, true);
-            // only check the output is a string, as test output is (somewhat) variable
-            expect(typeof result.output).toBe('string');
-            expect(result.testsPassed).toBe(expectedTestResult);
+            const expectedTestResults = JSON.parse('[ { "test": "test_greet (test_helper.TestHelper.test_greet)", "status": "SUCCESSFUL" }, { "test": "test_main_output (test_main.TestMain.test_main_output)", "status": "SUCCESSFUL" } ]');
+            const expectedTestsPassed = true;
+            const expectedScore = 100;
+            const result = await service.runPythonAssignment(mockFiles, mockTestFiles);
+
+            expect(result.testResults).toEqual(expectedTestResults);
+            expect(result.testsPassed).toBe(expectedTestsPassed);
+            expect(result.score).toBeCloseTo(expectedScore);
         });
 
-        it('should return the output of the assignment and the test result for a failed test', async () => {
-            const mockMainFile = 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K';
-            const mockAdditionalFiles = { 'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOg0KICAgIHJldHVybiBmIkhlbGxvLCB7bmFtZX0hIg0K' };
+        it('should return the test results for a failed test with a score of 50', async () => {
+            const mockFiles = {
+                'main.py': 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K',
+                'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOg0KICAgIHJldHVybiBmIkhlbGxvLCB7bmFtZX0hIg0K'
+            };
             const mockTestFiles = {
                 // this test will fail as the expected output is "Hello, World!" and the actual output is "Hello, world!"
                 'test_main.py': 'aW1wb3J0IHVuaXR0ZXN0CmltcG9ydCBpbwppbXBvcnQgc3lzCmZyb20gbWFpbiBpbXBvcnQgbWFpbgoKCmNsYXNzIFRlc3RNYWluKHVuaXR0ZXN0LlRlc3RDYXNlKToKICAgIGRlZiB0ZXN0X21haW5fb3V0cHV0KHNlbGYpOgogICAgICAgIGNhcHR1cmVkX291dHB1dCA9IGlvLlN0cmluZ0lPKCkgICMgQ3JlYXRlIFN0cmluZ0lPIG9iamVjdAogICAgICAgIHN5cy5zdGRvdXQgPSBjYXB0dXJlZF9vdXRwdXQgICMgUmVkaXJlY3Qgc3Rkb3V0CiAgICAgICAgbWFpbigpICAjIENhbGwgdGhlIG1haW4gZnVuY3Rpb24KICAgICAgICBzeXMuc3Rkb3V0ID0gc3lzLl9fc3Rkb3V0X18gICMgUmVzZXQgcmVkaXJlY3QKICAgICAgICBzZWxmLmFzc2VydEVxdWFsKGNhcHR1cmVkX291dHB1dC5nZXR2YWx1ZSgpLnN0cmlwKCksICJIZWxsbywgV29ybGQhIikKCgppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOgogICAgdW5pdHRlc3QubWFpbigpCg==',
-                'test_helperpy': 'aW1wb3J0IHVuaXR0ZXN0CmZyb20gaGVscGVyIGltcG9ydCBncmVldAoKCmNsYXNzIFRlc3RIZWxwZXIodW5pdHRlc3QuVGVzdENhc2UpOgogICAgZGVmIHRlc3RfZ3JlZXQoc2VsZik6CiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChncmVldCgid29ybGQiKSwgIkhlbGxvLCB3b3JsZCEiKQogICAgICAgIHNlbGYuYXNzZXJ0RXF1YWwoZ3JlZXQoInVzZXIiKSwgIkhlbGxvLCB1c2VyISIpCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIHVuaXR0ZXN0Lm1haW4oKQo='
+                'test_helper.py': 'aW1wb3J0IHVuaXR0ZXN0CmZyb20gaGVscGVyIGltcG9ydCBncmVldAoKCmNsYXNzIFRlc3RIZWxwZXIodW5pdHRlc3QuVGVzdENhc2UpOgogICAgZGVmIHRlc3RfZ3JlZXQoc2VsZik6CiAgICAgICAgc2VsZi5hc3NlcnRFcXVhbChncmVldCgid29ybGQiKSwgIkhlbGxvLCB3b3JsZCEiKQogICAgICAgIHNlbGYuYXNzZXJ0RXF1YWwoZ3JlZXQoInVzZXIiKSwgIkhlbGxvLCB1c2VyISIpCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIHVuaXR0ZXN0Lm1haW4oKQo='
             };
-            const expectedTestResult = false;
-            const result = await service.runPythonAssignment(mockMainFile, mockAdditionalFiles, mockTestFiles, true);
-            // only check the output is a string, as test output is (somewhat) variable
-            expect(typeof result.output).toBe('string');
-            expect(result.testsPassed).toBe(expectedTestResult);
+            const expectedTestResults = JSON.parse(`[
+                { "test": "test_greet (test_helper.TestHelper.test_greet)", "status": "SUCCESSFUL" },
+                { 
+                    "test": "test_main_output (test_main.TestMain.test_main_output)", 
+                    "status": "FAILED", 
+                    "exception": "Traceback (most recent call last):\\n  File \\"/usr/src/app/test_main.py\\", line 13, in test_main_output\\n    self.assertEqual(captured_output.getvalue().strip(), \\"Hello, World!\\")\\nAssertionError: 'Hello, world!' != 'Hello, World!'\\n- Hello, world!\\n?        ^\\n+ Hello, World!\\n?        ^\\n\\n"
+                }
+            ]`);
+            const expectedTestsPassed = false;
+            const expectedScore = 50;
+            const result = await service.runPythonAssignment(mockFiles, mockTestFiles);
+            expect(result.testResults).toEqual(expectedTestResults);
+            expect(result.testsPassed).toBe(expectedTestsPassed);
+            expect(result.score).toBeCloseTo(expectedScore);
         });
     });
 
@@ -251,8 +267,7 @@ describe('ExecutionService', () => {
      * This test requires the docker daemon to be running
      */
     describe('runJavaAssignment', () => {
-        it('should return the output of the assignment and the test result for a successful test', async () => {
-            const mockMainClassName = 'com.jury1.Main';
+        it('should return the test results for a successful test with a score of 100', async () => {
             const mockFiles = {
                 'Main.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgTWFpbiB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgbWFpbihTdHJpbmdbXSBhcmdzKSB7CiAgICAgICAgU3RyaW5nIG1lc3NhZ2UgPSBIZWxwZXIuZ3JlZXQoIndvcmxkIik7CiAgICAgICAgU3lzdGVtLm91dC5wcmludGxuKG1lc3NhZ2UpOwogICAgfQp9Cg==',
                 'Helper.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgSGVscGVyIHsKICAgIHB1YmxpYyBzdGF0aWMgU3RyaW5nIGdyZWV0KFN0cmluZyBuYW1lKSB7CiAgICAgICAgcmV0dXJuICJIZWxsbywgIiArIG5hbWUgKyAiISI7CiAgICB9Cn0='
@@ -261,15 +276,16 @@ describe('ExecutionService', () => {
                 'MainTest.java': 'cGFja2FnZSBjb20uanVyeTE7CgppbXBvcnQgb3JnLmp1bml0Lmp1cGl0ZXIuYXBpLkFmdGVyRWFjaDsKaW1wb3J0IG9yZy5qdW5pdC5qdXBpdGVyLmFwaS5CZWZvcmVFYWNoOwppbXBvcnQgb3JnLmp1bml0Lmp1cGl0ZXIuYXBpLlRlc3Q7CgppbXBvcnQgamF2YS5pby5CeXRlQXJyYXlPdXRwdXRTdHJlYW07CmltcG9ydCBqYXZhLmlvLlByaW50U3RyZWFtOwoKaW1wb3J0IHN0YXRpYyBvcmcuanVuaXQuanVwaXRlci5hcGkuQXNzZXJ0aW9ucy5hc3NlcnRUcnVlOwoKcHVibGljIGNsYXNzIE1haW5UZXN0IHsKCiAgICBwcml2YXRlIGZpbmFsIFByaW50U3RyZWFtIHN0YW5kYXJkT3V0ID0gU3lzdGVtLm91dDsKICAgIHByaXZhdGUgZmluYWwgQnl0ZUFycmF5T3V0cHV0U3RyZWFtIG91dHB1dFN0cmVhbUNhcHRvciA9IG5ldyBCeXRlQXJyYXlPdXRwdXRTdHJlYW0oKTsKCiAgICBAQmVmb3JlRWFjaAogICAgcHVibGljIHZvaWQgc2V0VXAoKSB7CiAgICAgICAgU3lzdGVtLnNldE91dChuZXcgUHJpbnRTdHJlYW0ob3V0cHV0U3RyZWFtQ2FwdG9yKSk7CiAgICB9CgogICAgQEFmdGVyRWFjaAogICAgcHVibGljIHZvaWQgdGVhckRvd24oKSB7CiAgICAgICAgU3lzdGVtLnNldE91dChzdGFuZGFyZE91dCk7CiAgICB9CgogICAgQFRlc3QKICAgIHB1YmxpYyB2b2lkIHRlc3RNYWluT3V0cHV0KCkgewogICAgICAgIFN0cmluZ1tdIGFyZ3MgPSB7fTsKICAgICAgICBNYWluLm1haW4oYXJncyk7CgogICAgICAgIFN0cmluZyBvdXRwdXQgPSBvdXRwdXRTdHJlYW1DYXB0b3IudG9TdHJpbmcoKS50cmltKCk7CiAgICAgICAgYXNzZXJ0VHJ1ZShvdXRwdXQuY29udGFpbnMoIkhlbGxvLCB3b3JsZCIpLCAiT3V0cHV0IHNob3VsZCBjb250YWluICdIZWxsbywgd29ybGQnIik7CiAgICB9Cn0K',
                 'HelperTest.java': 'cGFja2FnZSBjb20uanVyeTE7CgppbXBvcnQgb3JnLmp1bml0Lmp1cGl0ZXIuYXBpLlRlc3Q7CgppbXBvcnQgc3RhdGljIG9yZy5qdW5pdC5qdXBpdGVyLmFwaS5Bc3NlcnRpb25zLmFzc2VydEVxdWFsczsKCnB1YmxpYyBjbGFzcyBIZWxwZXJUZXN0IHsKCiAgICBAVGVzdAogICAgcHVibGljIHZvaWQgdGVzdEdyZWV0KCkgewogICAgICAgIC8vIEFycmFuZ2UKICAgICAgICBTdHJpbmcgbmFtZSA9ICJ3b3JsZCI7CgogICAgICAgIC8vIEFjdAogICAgICAgIFN0cmluZyByZXN1bHQgPSBIZWxwZXIuZ3JlZXQobmFtZSk7CgogICAgICAgIC8vIEFzc2VydAogICAgICAgIGFzc2VydEVxdWFscygiSGVsbG8sIHdvcmxkISIsIHJlc3VsdCwgIlRoZSBncmVldCBtZXRob2Qgc2hvdWxkIHJldHVybiB0aGUgY29ycmVjdCBncmVldGluZyBtZXNzYWdlLiIpOwogICAgfQp9'
             };
-            const expectedTestResult = true;
-            const result = await service.runJavaAssignment(mockMainClassName, mockFiles, mockTestFiles, true);
-            // only check the output is a string, as JUnit output is (somewhat) variable
-            expect(typeof result.output).toBe('string');
-            expect(result.testsPassed).toBe(expectedTestResult);
+            const expectedTestResults = JSON.parse('[ { "test": "testGreet()", "status": "SUCCESSFUL" }, { "test": "testMainOutput()", "status": "SUCCESSFUL" } ]');
+            const expectedTestsPassed = true;
+            const expectedScore = 100;
+            const result = await service.runJavaAssignment(mockFiles, mockTestFiles);
+            expect(result.testResults).toEqual(expectedTestResults);
+            expect(result.testsPassed).toBe(expectedTestsPassed);
+            expect(result.score).toBeCloseTo(expectedScore);
         });
 
-        it('should return the output of the assignment and the test result for a failed test', async () => {
-            const mockMainClassName = 'com.jury1.Main';
+        it('should return the test results for a failed test with a score of 50', async () => {
             const mockFiles = {
                 'Main.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgTWFpbiB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgbWFpbihTdHJpbmdbXSBhcmdzKSB7CiAgICAgICAgU3RyaW5nIG1lc3NhZ2UgPSBIZWxwZXIuZ3JlZXQoIndvcmxkIik7CiAgICAgICAgU3lzdGVtLm91dC5wcmludGxuKG1lc3NhZ2UpOwogICAgfQp9Cg==',
                 'Helper.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgSGVscGVyIHsKICAgIHB1YmxpYyBzdGF0aWMgU3RyaW5nIGdyZWV0KFN0cmluZyBuYW1lKSB7CiAgICAgICAgcmV0dXJuICJIZWxsbywgIiArIG5hbWUgKyAiISI7CiAgICB9Cn0='
@@ -279,11 +295,13 @@ describe('ExecutionService', () => {
                 'MainTest.java': 'cGFja2FnZSBjb20uanVyeTE7CgppbXBvcnQgb3JnLmp1bml0Lmp1cGl0ZXIuYXBpLkFmdGVyRWFjaDsKaW1wb3J0IG9yZy5qdW5pdC5qdXBpdGVyLmFwaS5CZWZvcmVFYWNoOwppbXBvcnQgb3JnLmp1bml0Lmp1cGl0ZXIuYXBpLlRlc3Q7CgppbXBvcnQgamF2YS5pby5CeXRlQXJyYXlPdXRwdXRTdHJlYW07CmltcG9ydCBqYXZhLmlvLlByaW50U3RyZWFtOwoKaW1wb3J0IHN0YXRpYyBvcmcuanVuaXQuanVwaXRlci5hcGkuQXNzZXJ0aW9ucy5hc3NlcnRUcnVlOwoKcHVibGljIGNsYXNzIE1haW5UZXN0IHsKCiAgICBwcml2YXRlIGZpbmFsIFByaW50U3RyZWFtIHN0YW5kYXJkT3V0ID0gU3lzdGVtLm91dDsKICAgIHByaXZhdGUgZmluYWwgQnl0ZUFycmF5T3V0cHV0U3RyZWFtIG91dHB1dFN0cmVhbUNhcHRvciA9IG5ldyBCeXRlQXJyYXlPdXRwdXRTdHJlYW0oKTsKCiAgICBAQmVmb3JlRWFjaAogICAgcHVibGljIHZvaWQgc2V0VXAoKSB7CiAgICAgICAgU3lzdGVtLnNldE91dChuZXcgUHJpbnRTdHJlYW0ob3V0cHV0U3RyZWFtQ2FwdG9yKSk7CiAgICB9CgogICAgQEFmdGVyRWFjaAogICAgcHVibGljIHZvaWQgdGVhckRvd24oKSB7CiAgICAgICAgU3lzdGVtLnNldE91dChzdGFuZGFyZE91dCk7CiAgICB9CgogICAgQFRlc3QKICAgIHB1YmxpYyB2b2lkIHRlc3RNYWluT3V0cHV0KCkgewogICAgICAgIFN0cmluZ1tdIGFyZ3MgPSB7fTsKICAgICAgICBNYWluLm1haW4oYXJncyk7CgogICAgICAgIFN0cmluZyBvdXRwdXQgPSBvdXRwdXRTdHJlYW1DYXB0b3IudG9TdHJpbmcoKS50cmltKCk7CiAgICAgICAgYXNzZXJ0VHJ1ZShvdXRwdXQuY29udGFpbnMoIkhlbGxvLCBXb3JsZCIpLCAiT3V0cHV0IHNob3VsZCBjb250YWluICdIZWxsbywgV29ybGQnIik7CiAgICB9Cn0K',
                 'HelperTest.java': 'cGFja2FnZSBjb20uanVyeTE7CgppbXBvcnQgb3JnLmp1bml0Lmp1cGl0ZXIuYXBpLlRlc3Q7CgppbXBvcnQgc3RhdGljIG9yZy5qdW5pdC5qdXBpdGVyLmFwaS5Bc3NlcnRpb25zLmFzc2VydEVxdWFsczsKCnB1YmxpYyBjbGFzcyBIZWxwZXJUZXN0IHsKCiAgICBAVGVzdAogICAgcHVibGljIHZvaWQgdGVzdEdyZWV0KCkgewogICAgICAgIC8vIEFycmFuZ2UKICAgICAgICBTdHJpbmcgbmFtZSA9ICJ3b3JsZCI7CgogICAgICAgIC8vIEFjdAogICAgICAgIFN0cmluZyByZXN1bHQgPSBIZWxwZXIuZ3JlZXQobmFtZSk7CgogICAgICAgIC8vIEFzc2VydAogICAgICAgIGFzc2VydEVxdWFscygiSGVsbG8sIHdvcmxkISIsIHJlc3VsdCwgIlRoZSBncmVldCBtZXRob2Qgc2hvdWxkIHJldHVybiB0aGUgY29ycmVjdCBncmVldGluZyBtZXNzYWdlLiIpOwogICAgfQp9'
             };
-            const expectedTestResult = false;
-            const result = await service.runJavaAssignment(mockMainClassName, mockFiles, mockTestFiles, true);
-            // only check the output is a string, as JUnit output is (somewhat) variable
-            expect(typeof result.output).toBe('string');
-            expect(result.testsPassed).toBe(expectedTestResult);
+            const expectedTestResults = JSON.parse('[ { "test": "testGreet()", "status": "SUCCESSFUL" }, { "exception": "Output should contain \'Hello, World\' ==> expected: <true> but was: <false>", "test": "testMainOutput()", "status": "FAILED" } ]');
+            const expectedTestsPassed = false;
+            const expectedScore = 50;
+            const result = await service.runJavaAssignment(mockFiles, mockTestFiles);
+            expect(result.testResults).toEqual(expectedTestResults);
+            expect(result.testsPassed).toBe(expectedTestsPassed);
+            expect(result.score).toBeCloseTo(expectedScore);
         });
     });
 });

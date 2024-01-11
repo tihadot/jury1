@@ -69,31 +69,28 @@ export class ExecutionController {
     }
 
     /**
-     * Runs the given python assignment code in a docker container and runs the provided tests
-     * @param { string } body.mainFile - The main file of the project (base64 encoded content)
-     * @param { Record<string, string> } body.additionalFiles - The additional files of the project (filename: base64 encoded content)
-     * @param { Record<string, string> } body.testFiles - The test files of the project (filename: base64 encoded content)
-     * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
-     * @returns { Promise<{ output: string, testsPassed: boolean }> } - The output of the code and whether the tests passed
+     * Runs the tests for the given python assignment code in a docker container
+     * @param { Record<string, string> } body.files - The files of the project (filename: base64 encoded content)
+     * @param { Record<string, string> } body.testFiles - The test files of the project (filename (pattern: test_*.py): base64 encoded content)
+     * @returns { Promise<{ testResults: JSON, testsPassed: boolean, score: number }> } - The test results, whether the tests passed and the score (number of passed tests / total number of tests)
      * @throws { BadRequestException } - If the input is not valid base64 encoded
      * @throws { BadRequestException } - If the code is not safe to execute
      */
     @Post('/python-assignment')
     async executePythonAssignment(
-        @Body() body: { mainFile: string; additionalFiles: Record<string, string>; testFiles: Record<string, string> },
-        @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
-    ): Promise<{ output: string, testsPassed: boolean } | BadRequestException> {
-        let output: { output: string; testsPassed: boolean };
+        @Body() body: { files: Record<string, string>; testFiles: Record<string, string> },
+    ): Promise<{ testResults: JSON, testsPassed: boolean, score: number } | BadRequestException> {
+        let output: { testResults: JSON; testsPassed: boolean, score: number };
 
         try {
-            output = await this.executionService.runPythonAssignment(body.mainFile, body.additionalFiles, body.testFiles, shouldOutputBase64);
+            output = await this.executionService.runPythonAssignment(body.files, body.testFiles);
         }
         catch (error) {
             throw new BadRequestException(error.message);
         }
 
         console.log("output: ", output);
-        return { output: output.output, testsPassed: output.testsPassed };
+        return { testResults: output.testResults, testsPassed: output.testsPassed, score: output.score };
     }
 
     /**
@@ -152,30 +149,27 @@ export class ExecutionController {
     }
 
     /**
-     * Runs the given java assignment code in a docker container and runs the provided tests
-     * @param { string } body.mainClassName - The main class name of the project
+     * Runs the tests for the given java assignment code in a docker container
      * @param { Record<string, string> } body.files - The files of the project (filename: base64 encoded content)
      * @param { Record<string, string> } body.testFiles - The test files of the project (filename: base64 encoded content)
-     * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
-     * @returns { Promise<{ output: string, testsPassed: boolean }> } - The output of the code and whether the tests passed
+     * @returns { Promise<{ testResults: JSON, testsPassed: boolean, score: number }> } - The test results, whether the tests passed and the score (number of passed tests / total number of tests)
      * @throws { BadRequestException } - If the input is not valid base64 encoded
      * @throws { BadRequestException } - If the code is not safe to execute
      */
     @Post('/java-assignment')
     async executeJavaAssignment(
-        @Body() body: { mainClassName: string; files: Record<string, string>; testFiles: Record<string, string> },
-        @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
-    ): Promise<{ output: string, testsPassed: boolean }> {
-        let output: { output: string; testsPassed: boolean };
+        @Body() body: { files: Record<string, string>; testFiles: Record<string, string> }
+    ): Promise<{ testResults: JSON, testsPassed: boolean, score: number }> {
+        let output: { testResults: JSON; testsPassed: boolean, score: number };
 
         try {
-            output = await this.executionService.runJavaAssignment(body.mainClassName, body.files, body.testFiles, shouldOutputBase64);
+            output = await this.executionService.runJavaAssignment(body.files, body.testFiles);
         }
         catch (error) {
             throw new BadRequestException(error.message);
         }
 
         console.log("output: ", output);
-        return { output: output.output, testsPassed: output.testsPassed };
+        return { testResults: output.testResults, testsPassed: output.testsPassed, score: output.score };
     }
 }
