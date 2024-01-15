@@ -313,7 +313,13 @@ describe('ExecutionService', () => {
                 'MainTest.java': 'cGFja2FnZSBjb20uanVyeTE7CgppbXBvcnQgb3JnLmp1bml0Lmp1cGl0ZXIuYXBpLkFmdGVyRWFjaDsKaW1wb3J0IG9yZy5qdW5pdC5qdXBpdGVyLmFwaS5CZWZvcmVFYWNoOwppbXBvcnQgb3JnLmp1bml0Lmp1cGl0ZXIuYXBpLlRlc3Q7CgppbXBvcnQgamF2YS5pby5CeXRlQXJyYXlPdXRwdXRTdHJlYW07CmltcG9ydCBqYXZhLmlvLlByaW50U3RyZWFtOwoKaW1wb3J0IHN0YXRpYyBvcmcuanVuaXQuanVwaXRlci5hcGkuQXNzZXJ0aW9ucy5hc3NlcnRUcnVlOwoKcHVibGljIGNsYXNzIE1haW5UZXN0IHsKCiAgICBwcml2YXRlIGZpbmFsIFByaW50U3RyZWFtIHN0YW5kYXJkT3V0ID0gU3lzdGVtLm91dDsKICAgIHByaXZhdGUgZmluYWwgQnl0ZUFycmF5T3V0cHV0U3RyZWFtIG91dHB1dFN0cmVhbUNhcHRvciA9IG5ldyBCeXRlQXJyYXlPdXRwdXRTdHJlYW0oKTsKCiAgICBAQmVmb3JlRWFjaAogICAgcHVibGljIHZvaWQgc2V0VXAoKSB7CiAgICAgICAgU3lzdGVtLnNldE91dChuZXcgUHJpbnRTdHJlYW0ob3V0cHV0U3RyZWFtQ2FwdG9yKSk7CiAgICB9CgogICAgQEFmdGVyRWFjaAogICAgcHVibGljIHZvaWQgdGVhckRvd24oKSB7CiAgICAgICAgU3lzdGVtLnNldE91dChzdGFuZGFyZE91dCk7CiAgICB9CgogICAgQFRlc3QKICAgIHB1YmxpYyB2b2lkIHRlc3RNYWluT3V0cHV0KCkgewogICAgICAgIFN0cmluZ1tdIGFyZ3MgPSB7fTsKCiAgICAgICAgLy8gU3ludGF4IGVycm9yCiAgICAgICAgTWFpbi5tbihhcmdzKTsKCiAgICAgICAgU3RyaW5nIG91dHB1dCA9IG91dHB1dFN0cmVhbUNhcHRvci50b1N0cmluZygpLnRyaW0oKTsKICAgICAgICBhc3NlcnRUcnVlKG91dHB1dC5jb250YWlucygiSGVsbG8sIHdvcmxkIiksICJPdXRwdXQgc2hvdWxkIGNvbnRhaW4gJ0hlbGxvLCB3b3JsZCciKTsKICAgIH0KfQo=',
                 'HelperTest.java': 'cGFja2FnZSBjb20uanVyeTE7CgppbXBvcnQgb3JnLmp1bml0Lmp1cGl0ZXIuYXBpLlRlc3Q7CgppbXBvcnQgc3RhdGljIG9yZy5qdW5pdC5qdXBpdGVyLmFwaS5Bc3NlcnRpb25zLmFzc2VydEVxdWFsczsKCnB1YmxpYyBjbGFzcyBIZWxwZXJUZXN0IHsKCiAgICBAVGVzdAogICAgcHVibGljIHZvaWQgdGVzdEdyZWV0KCkgewogICAgICAgIC8vIEFycmFuZ2UKICAgICAgICBTdHJpbmcgbmFtZSA9ICJ3b3JsZCI7CgogICAgICAgIC8vIEFjdAogICAgICAgIFN0cmluZyByZXN1bHQgPSBIZWxwZXIuZ3JlZXQobmFtZSk7CgogICAgICAgIC8vIEFzc2VydAogICAgICAgIGFzc2VydEVxdWFscygiSGVsbG8sIHdvcmxkISIsIHJlc3VsdCwgIlRoZSBncmVldCBtZXRob2Qgc2hvdWxkIHJldHVybiB0aGUgY29ycmVjdCBncmVldGluZyBtZXNzYWdlLiIpOwogICAgfQp9'
             };
-            const expectedTestResults = JSON.parse('[ {"status": "COMPILATION_FAILED", "test": "Compilation", "exception": "Java syntax error or compilation failed."} ]');
+            const expectedTestResults = JSON.parse(`[
+                { 
+                    "test": "Compilation",
+                    "status": "FAILED",
+                    "exception": "./com/jury1/MainTest.java:32: error: cannot find symbol\\n        Main.mn(args);\\n            ^\\n  symbol:   method mn(String[])\\n  location: class Main\\n1 error"
+                }
+            ]`);
             const expectedTestsPassed = false;
             const expectedScore = 0;
             const result = await service.runJavaAssignment(mockFiles, mockTestFiles);

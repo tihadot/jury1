@@ -352,9 +352,12 @@ export class ExecutionService {
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.javaJunitImage,
             // Finds all java files in the current directory structure and compiles them. Then runs the tests with JUnit. If the compilation fails, a corresponding error is returned.
-            Cmd: ['sh', '-c', `
-            if ! find . -name "*.java" -exec javac -cp .:/junit/* {} +; then
-                echo '[{"status":"COMPILATION_FAILED","test":"Compilation","exception":"Java syntax error or compilation failed."}]' > /usr/src/app/test-results.json
+            Cmd: ['bash', '-c', `
+            if ! find . -name "*.java" -exec javac -cp .:/junit/* {} + > compile_errors.txt 2>&1; then
+                # create json file using jo (included in the provided docker image)
+                echo "[" > test-results.json
+                jo -p test=Compilation status=FAILED exception=@compile_errors.txt >> /usr/src/app/test-results.json
+                echo "]" >> test-results.json
                 exit 1
             else
                 java -cp .:/junit/* org.junit.platform.console.ConsoleLauncher --scan-classpath --disable-ansi-colors --disable-banner --details=none

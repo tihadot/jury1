@@ -25,6 +25,9 @@ RUN wget -O /junit/junit-platform-console-standalone-1.9.0.jar "https://repo1.ma
 # JSON Simple
 RUN wget -O /junit/json-simple-1.1.1.jar "https://repo1.maven.org/maven2/com/googlecode/json-simple/json-simple/1.1.1/json-simple-1.1.1.jar"
 
+# jo - JSON output from a shell
+RUN apt-get install -y jo
+
 # Custom JUnit Test Runner
 COPY CustomRunners/CustomTestExecutionListener/target/custom-test-execution-listener-1.0-SNAPSHOT.jar /junit/CustomTestExecutionListener.jar
 
