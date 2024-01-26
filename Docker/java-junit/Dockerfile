@@ -1,3 +1,5 @@
+# A Dockerfile for a Java image with JUnit and the custom test execution listener (CustomTestExecutionListener) installed
+
 FROM openjdk:22-slim
 
 # Set up working directory

@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import * as Docker from 'dockerode';
-import { mkdirSync, rmSync, writeFileSync } from 'fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
 import * as fs from 'fs';
+import * as tar from 'tar-fs';
+import * as mime from 'mime-types';
 import { PythonSanitizerService } from '../python-sanitizer/python-sanitizer.service';
 import { JavaSanitizerService } from '../java-sanitizer/java-sanitizer.service';
 
@@ -96,19 +98,23 @@ export class ExecutionService {
     }
 
     /**
-     * Runs the given python project code in a docker container
+     * Runs the given python project code in a docker container. Supports multiple files and user generated file output
      * @param { string } mainFile - The main file of the project (base64 encoded content)
      * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
-     * @returns { Promise<string> } - The output of the code
+     * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types and their base64 encoded content
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
-    async runPythonProject(mainFile: string, additionalFiles: Record<string, string>, shouldOutputBase64: boolean): Promise<string> {
+    async runPythonProject(mainFile: string, additionalFiles: Record<string, string>, shouldOutputBase64: boolean): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(tmpdir(), 'jury1', executionId);
         mkdirSync(tempDir, { recursive: true });
+
+        // Create the output directory for generated files
+        const outputDir = join(tempDir, 'output');
+        mkdirSync(outputDir, { recursive: true });
 
         // Decode and save the main file
         await this.handleFileOperations(tempDir, { 'main.py': mainFile }, this.pythonSanitizerService);
@@ -116,6 +122,7 @@ export class ExecutionService {
         await this.handleFileOperations(tempDir, additionalFiles, this.pythonSanitizerService);
 
         let container: Docker.Container;
+        let encodedFiles: { [filename: string]: { mimeType: string, content: string } } = {};
 
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.pythonImage,
@@ -141,7 +148,10 @@ export class ExecutionService {
                 output = Buffer.from(output).toString('base64');
             }
 
-            return output;
+            // Retrieve and encode generated files
+            encodedFiles = await this.retrieveAndEncodeFiles(container, tempDir);
+
+            return { output, files: encodedFiles };
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
             await this.stopAndRemoveContainer(container);
@@ -538,5 +548,43 @@ export class ExecutionService {
 
             writeFileSync(filePath, fileContent);
         }
+    }
+
+    /**
+     * Retrieves and encodes the files generated in the given container
+     * @param { Docker.Container } container - The container to retrieve the files from
+     * @param { string } tempDir - The temporary directory to save the files in
+     * @returns { Promise<{ [filename: string]: { mimeType: string, content: string } }> } - The generated files, their mime types and their base64 encoded content
+     */
+    async retrieveAndEncodeFiles(container: Docker.Container, tempDir: string): Promise<{ [filename: string]: { mimeType: string, content: string } }> {
+        const encodedFiles: { [filename: string]: { mimeType: string, content: string } } = {};
+
+        try {
+            // Define the path where the files are expected to be generated in the container
+            const generatedFilesPath = '/usr/src/app/output/';
+
+            // Copy files from the Docker container to the host
+            const stream = await container.getArchive({ path: generatedFilesPath });
+            await new Promise((resolve, reject) => {
+                stream.pipe(tar.extract(tempDir)).on('finish', resolve).on('error', reject);
+            });
+
+            // Read the contents of the output directory
+            const fileNames = readdirSync(join(tempDir, 'output'));
+            for (const fileName of fileNames) {
+                const filePath = join(tempDir, 'output', fileName);
+                const fileBuffer = readFileSync(filePath);
+                const fileMimeType = mime.lookup(filePath) || 'application/octet-stream';
+
+                encodedFiles[fileName] = {
+                    mimeType: fileMimeType,
+                    content: fileBuffer.toString('base64')
+                };
+            }
+        } catch (error) {
+            console.warn('Error in retrieving and encoding files or no files were generated:', error);
+        }
+
+        return encodedFiles;
     }
 }

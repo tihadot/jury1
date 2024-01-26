@@ -42,11 +42,11 @@ export class ExecutionController {
     }
 
     /**
-     * Runs the given python project code in a docker container
+     * Runs the given python project code in a docker container. Supports multiple files and user generated file output
      * @param { string } body.mainFile - The main file of the project (base64 encoded content)
      * @param { Record<string, string> } body.additionalFiles - The additional files of the project (filename: base64 encoded content)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
-     * @returns { Promise<{ output: string }> } - The output of the code
+     * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types and their base64 encoded content
      * @throws { BadRequestException } - If the input is not valid base64 encoded
      * @throws { BadRequestException } - If the code is not safe to execute
      */
@@ -54,8 +54,8 @@ export class ExecutionController {
     async executePythonProject(
         @Body() body: { mainFile: string; additionalFiles: Record<string, string> },
         @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
-    ): Promise<{ output: string } | BadRequestException> {
-        let output: string;
+    ): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
+        let output: { output: string; files: { [filename: string]: { mimeType: string, content: string } }; };
 
         try {
             output = await this.executionService.runPythonProject(body.mainFile, body.additionalFiles, shouldOutputBase64);
@@ -65,7 +65,7 @@ export class ExecutionController {
         }
 
         console.log("output: ", output);
-        return { output };
+        return output;
     }
 
     /**

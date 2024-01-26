@@ -1,3 +1,5 @@
+# A Dockerfile for a Python image with the custom test runner script (json_test_runner.py) installed
+
 FROM python:3.12.0-alpine
 
 # Copy the custom test runner script into the container at /usr/src/app
