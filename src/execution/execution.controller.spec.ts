@@ -94,8 +94,8 @@ describe('ExecutionController', () => {
     describe('executeJavaProject', () => {
         it('should return the output from the execution service with default base64 setting', async () => {
             const mockBody = { mainClassName: 'com.jury1.Main', files: { 'file1.java': 'encoded_file1_content', 'file2.java': 'encoded_file_2_content' } };
-            const expectedResult = { output: 'Project output\n' };
-            jest.spyOn(executionService, 'runJavaProject').mockResolvedValue(expectedResult.output);
+            const expectedResult = { output: 'Project output\n', files: { 'file1.java': { mimeType: 'text/plain', content: 'encoded_file1_content' }, 'file2.java': { mimeType: 'text/plain', content: 'encoded_file_2_content' } } };
+            jest.spyOn(executionService, 'runJavaProject').mockResolvedValue(expectedResult);
 
             expect(await controller.executeJavaProject(mockBody, true)).toEqual(expectedResult);
             expect(executionService.runJavaProject).toHaveBeenCalledWith(mockBody.mainClassName, mockBody.files, true);
@@ -103,8 +103,8 @@ describe('ExecutionController', () => {
 
         it('should handle non-base64 output for projects', async () => {
             const mockBody = { mainClassName: 'com.jury1.Main', files: { 'file1.java': 'encoded_file1_content', 'file2.java': 'encoded_file_2_content' } };
-            const expectedResult = { output: 'Project output\n' };
-            jest.spyOn(executionService, 'runJavaProject').mockResolvedValue(expectedResult.output);
+            const expectedResult = { output: 'Project output\n', files: { 'file1.java': { mimeType: 'text/plain', content: 'encoded_file1_content' }, 'file2.java': { mimeType: 'text/plain', content: 'encoded_file_2_content' } } };
+            jest.spyOn(executionService, 'runJavaProject').mockResolvedValue(expectedResult)
 
             expect(await controller.executeJavaProject(mockBody, false)).toEqual(expectedResult);
             expect(executionService.runJavaProject).toHaveBeenCalledWith(mockBody.mainClassName, mockBody.files, false);

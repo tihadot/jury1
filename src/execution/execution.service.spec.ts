@@ -228,8 +228,8 @@ describe('ExecutionService', () => {
                 'Main.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgTWFpbiB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgbWFpbihTdHJpbmdbXSBhcmdzKSB7CiAgICAgICAgU3RyaW5nIG1lc3NhZ2UgPSBIZWxwZXIuZ3JlZXQoIndvcmxkIik7CiAgICAgICAgU3lzdGVtLm91dC5wcmludGxuKG1lc3NhZ2UpOwogICAgfQp9Cg==',
                 'Helper.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgSGVscGVyIHsKICAgIHB1YmxpYyBzdGF0aWMgU3RyaW5nIGdyZWV0KFN0cmluZyBuYW1lKSB7CiAgICAgICAgcmV0dXJuICJIZWxsbywgIiArIG5hbWUgKyAiISI7CiAgICB9Cn0='
             };
-            const expectedResult = 'SGVsbG8sIHdvcmxkIQo=';
-            expect(await service.runJavaProject(mockMainClassName, mockFiles, true)).toBe(expectedResult);
+            const expectedResult = { output: 'SGVsbG8sIHdvcmxkIQo=', files: {} };
+            expect(await service.runJavaProject(mockMainClassName, mockFiles, true)).toEqual(expectedResult);
         });
 
         it('should handle non-base64 output for projects', async () => {
@@ -238,8 +238,8 @@ describe('ExecutionService', () => {
                 'Main.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgTWFpbiB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgbWFpbihTdHJpbmdbXSBhcmdzKSB7CiAgICAgICAgU3RyaW5nIG1lc3NhZ2UgPSBIZWxwZXIuZ3JlZXQoIndvcmxkIik7CiAgICAgICAgU3lzdGVtLm91dC5wcmludGxuKG1lc3NhZ2UpOwogICAgfQp9Cg==',
                 'Helper.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgSGVscGVyIHsKICAgIHB1YmxpYyBzdGF0aWMgU3RyaW5nIGdyZWV0KFN0cmluZyBuYW1lKSB7CiAgICAgICAgcmV0dXJuICJIZWxsbywgIiArIG5hbWUgKyAiISI7CiAgICB9Cn0='
             };
-            const expectedResult = 'Hello, world!\n';
-            expect(await service.runJavaProject(mockMainClassName, mockFiles, false)).toBe(expectedResult);
+            const expectedResult = { output: 'Hello, world!\n', files: {} };
+            expect(await service.runJavaProject(mockMainClassName, mockFiles, false)).toEqual(expectedResult);
         });
 
         it('should throw an error if the input is not valid base64 encoded', async () => {

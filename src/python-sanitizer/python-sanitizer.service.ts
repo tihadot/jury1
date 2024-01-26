@@ -20,7 +20,6 @@ export class PythonSanitizerService {
             /exec\s*\(/,          // 'exec' function
             /eval\s*\(/,          // 'eval' function
             /subprocess/,         // 'subprocess' module
-            /open\s*\(/,          // File operations
         ];
     }
 

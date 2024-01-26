@@ -286,24 +286,29 @@ export class ExecutionService {
     }
 
     /**
-     * Runs the given java project code in a docker container
+     * Runs the given java project code in a docker container. Supports multiple files and user generated file output
      * @param { string } mainClassName - The main file of the project (base64 encoded content)
      * @param { Record<string, string> } files - The additional files of the project (filename: base64 encoded content)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
-     * @returns { Promise<string> } - The output of the code
+     * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types and their base64 encoded content
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
-    async runJavaProject(mainClassName: string, files: Record<string, string>, shouldOutputBase64: boolean): Promise<string> {
+    async runJavaProject(mainClassName: string, files: Record<string, string>, shouldOutputBase64: boolean): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(tmpdir(), 'jury1', executionId);
         mkdirSync(tempDir, { recursive: true });
 
+        // Create the output directory for generated files
+        const outputDir = join(tempDir, 'output');
+        mkdirSync(outputDir, { recursive: true });
+
         // Decode and save files
         await this.handleFileOperations(tempDir, files, this.javaSanitizerService, true);
 
         let container: Docker.Container;
+        let encodedFiles: { [filename: string]: { content: string, mimeType: string } } = {};
 
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.javaImage,
@@ -329,7 +334,10 @@ export class ExecutionService {
                 output = Buffer.from(output).toString('base64');
             }
 
-            return output;
+            // Retrieve and encode generated files
+            encodedFiles = await this.retrieveAndEncodeFiles(container, tempDir);
+
+            return { output, files: encodedFiles };
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
             await this.stopAndRemoveContainer(container);
