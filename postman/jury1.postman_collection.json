@@ -102,6 +102,40 @@
 			"response": []
 		},
 		{
+			"name": "Execute Python Project With File Output",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"mainFile\": \"aW1wb3J0IG1hdHBsb3RsaWIucHlwbG90IGFzIHBsdAoKZGVmIGNyZWF0ZV9wbG90KCk6CiAgICAjIFNhbXBsZSBkYXRhCiAgICB4ID0gWzEsIDIsIDMsIDQsIDVdCiAgICB5ID0gWzIsIDMsIDUsIDcsIDExXQoKICAgICMgQ3JlYXRlIGEgbGluZSBwbG90CiAgICBwbHQucGxvdCh4LCB5LCBtYXJrZXI9J28nKQoKICAgICMgQWRkIHRpdGxlcyBhbmQgbGFiZWxzCiAgICBwbHQudGl0bGUoIlNhbXBsZSBQbG90IikKICAgIHBsdC54bGFiZWwoIlggQXhpcyIpCiAgICBwbHQueWxhYmVsKCJZIEF4aXMiKQoKICAgICMgU2F2ZSB0aGUgcGxvdCBhcyBhIGZpbGUKICAgIHBsdC5zYXZlZmlnKCcvdXNyL3NyYy9hcHAvb3V0cHV0L3Bsb3QucG5nJykKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICBjcmVhdGVfcGxvdCgp\",\r\n    \"additionalFiles\": {}\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/execute/python-project?shouldOutputBase64=false",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"python-project"
+					],
+					"query": [
+						{
+							"key": "shouldOutputBase64",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Execute Python Assignment",
 			"request": {
 				"method": "POST",
@@ -182,6 +216,40 @@
 				"body": {
 					"mode": "raw",
 					"raw": "{\r\n    \"mainClassName\": \"com.jury1.Main\",\r\n    \"files\": {\r\n        \"Main.java\": \"cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgTWFpbiB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgbWFpbihTdHJpbmdbXSBhcmdzKSB7CiAgICAgICAgU3RyaW5nIG1lc3NhZ2UgPSBIZWxwZXIuZ3JlZXQoIndvcmxkIik7CiAgICAgICAgU3lzdGVtLm91dC5wcmludGxuKG1lc3NhZ2UpOwogICAgfQp9Cg==\",\r\n        \"Helper.java\": \"cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgSGVscGVyIHsKICAgIHB1YmxpYyBzdGF0aWMgU3RyaW5nIGdyZWV0KFN0cmluZyBuYW1lKSB7CiAgICAgICAgcmV0dXJuICJIZWxsbywgIiArIG5hbWUgKyAiISI7CiAgICB9Cn0=\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/execute/java-project?shouldOutputBase64=false",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"java-project"
+					],
+					"query": [
+						{
+							"key": "shouldOutputBase64",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Execute Java Project With File Output",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"mainClassName\": \"Main\",\r\n    \"files\": {\r\n        \"Main.java\": \"aW1wb3J0IGphdmF4LmltYWdlaW8uSW1hZ2VJTzsKaW1wb3J0IGphdmEuYXd0Lio7CmltcG9ydCBqYXZhLmF3dC5pbWFnZS5CdWZmZXJlZEltYWdlOwppbXBvcnQgamF2YS5pby4qOwoKcHVibGljIGNsYXNzIE1haW4gewogICAgcHVibGljIHN0YXRpYyB2b2lkIG1haW4oU3RyaW5nW10gYXJncykgewogICAgICAgIC8vIEdlbmVyYXRlIGEgdGV4dCBmaWxlCiAgICAgICAgdHJ5IChQcmludFdyaXRlciBvdXQgPSBuZXcgUHJpbnRXcml0ZXIoIm91dHB1dC9vdXRwdXQudHh0IikpIHsKICAgICAgICAgICAgb3V0LnByaW50bG4oIkhlbGxvLCB0aGlzIGlzIGEgdGV4dCBmaWxlLiIpOwogICAgICAgICAgICBvdXQucHJpbnRsbigiSmF2YSBwcm9ncmFtIGV4ZWN1dGVkIHN1Y2Nlc3NmdWxseS4iKTsKICAgICAgICB9IGNhdGNoIChGaWxlTm90Rm91bmRFeGNlcHRpb24gZSkgewogICAgICAgICAgICBTeXN0ZW0ub3V0LnByaW50bG4oIkVycm9yIHdyaXRpbmcgdG8gdGV4dCBmaWxlOiAiICsgZS5nZXRNZXNzYWdlKCkpOwogICAgICAgIH0KCiAgICAgICAgLy8gR2VuZXJhdGUgYSBQTkcgaW1hZ2UKICAgICAgICBpbnQgd2lkdGggPSAxMDA7CiAgICAgICAgaW50IGhlaWdodCA9IDEwMDsKICAgICAgICBCdWZmZXJlZEltYWdlIGltYWdlID0gbmV3IEJ1ZmZlcmVkSW1hZ2Uod2lkdGgsIGhlaWdodCwgQnVmZmVyZWRJbWFnZS5UWVBFX0lOVF9SR0IpOwogICAgICAgIEdyYXBoaWNzMkQgZ3JhcGhpY3MgPSBpbWFnZS5jcmVhdGVHcmFwaGljcygpOwoKICAgICAgICAvLyBEcmF3IHNvbWV0aGluZyBvbiB0aGUgaW1hZ2UKICAgICAgICBncmFwaGljcy5zZXRDb2xvcihDb2xvci5CTFVFKTsKICAgICAgICBncmFwaGljcy5maWxsUmVjdCgwLCAwLCB3aWR0aCwgaGVpZ2h0KTsKICAgICAgICBncmFwaGljcy5zZXRDb2xvcihDb2xvci5ZRUxMT1cpOwogICAgICAgIGdyYXBoaWNzLmZpbGxPdmFsKDI1LCAyNSwgNTAsIDUwKTsKCiAgICAgICAgLy8gV3JpdGUgaW1hZ2UgdG8gZmlsZQogICAgICAgIHRyeSB7CiAgICAgICAgICAgIEltYWdlSU8ud3JpdGUoaW1hZ2UsICJwbmciLCBuZXcgRmlsZSgib3V0cHV0L291dHB1dC5wbmciKSk7CiAgICAgICAgfSBjYXRjaCAoSU9FeGNlcHRpb24gZSkgewogICAgICAgICAgICBTeXN0ZW0ub3V0LnByaW50bG4oIkVycm9yIHdyaXRpbmcgdG8gaW1hZ2UgZmlsZTogIiArIGUuZ2V0TWVzc2FnZSgpKTsKICAgICAgICB9CiAgICB9Cn0K\"\r\n    }\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
