@@ -2,11 +2,9 @@
   <button (click)="startSession()">Start Interactive Session</button>
   <button (click)="disconnect()">End Session</button>
 
-  <div class="output-window">
-    <p *ngFor="let line of output">{{ line }}</p>
-  </div>
+  <textarea class="output-area" [value]="output.join('\n')" #textarea [scrollTop]="textarea.scrollHeight" readonly></textarea>
 
-  <textarea [(ngModel)]="input" placeholder="Enter input here"></textarea>
+  <textarea class="input-area" [(ngModel)]="input" placeholder="Enter input here"></textarea>
   <div>
     <button (click)="sendInput()">Send Input</button>
     <button (click)="upsertFiles()">Send Input as Files</button>

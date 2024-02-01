@@ -1,5 +1,8 @@
 import * as Docker from 'dockerode';
 import { Injectable } from '@nestjs/common';
+import { mkdirSync } from 'fs';
+import { join } from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * This service is responsible for interacting with the Docker API.
@@ -15,6 +18,9 @@ export class ExecutionWsService {
         'runc';
     //    'runsc';
     //    'runsc-debug';
+
+    // The docker images to use for the different languages. Make sure that the images are available locally.
+    private readonly pythonImage = process.env.DOCKER_IMAGE_PYTHON || 'python-interactive';
 
     // Map of session IDs to containers
     private sessionContainers = new Map<string, Docker.Container>();
@@ -32,6 +38,25 @@ export class ExecutionWsService {
     }
 
     /**
+     * Starts an interactive python session
+     * @param { Record<string, string> } files - The files of the session (filename: base64 encoded content)
+     * @returns { Promise<string> } - The session ID of the started session
+     */
+    async startPythonSession(): Promise<string> {
+        const sessionId = uuidv4();
+        const tempDir = join(__dirname, 'temp', sessionId);
+        mkdirSync(tempDir, { recursive: true });
+
+        // Start Docker container
+        const container = await this.startInteractiveSession(this.pythonImage, tempDir);
+
+        // Register container
+        this.registerContainer(sessionId, container);
+
+        return sessionId; // Return the session ID to the client
+    }
+
+    /**
      * Starts an interactive session with the given image.
      * @param { string } image - The Docker image to start the session with.
      * @param { string } tempDir - The temporary directory to mount as workspace.
@@ -40,15 +65,14 @@ export class ExecutionWsService {
     async startInteractiveSession(image: string, tempDir: string): Promise<Docker.Container> {
         const container = await this.docker.createContainer({
             Image: image,
-            Cmd: ['/bin/sh'],
+            Cmd: ['node', '/commandListener/commandListener.js'],
             Tty: true,
             OpenStdin: true,
             AttachStdin: true,
             AttachStdout: true,
             AttachStderr: true,
-            WorkingDir: '/usr/src/app',
+            WorkingDir: '/commandListener',
             HostConfig: {
-                Binds: [`${tempDir}:/usr/src/app`],
                 Runtime: this.runtime,
             }
         });
@@ -61,7 +85,15 @@ export class ExecutionWsService {
      * @param { Docker.Container } container - The container to signal the start to.
      */
     async startProgram(container: Docker.Container): Promise<void> {
-        this.sendInput(container, 'python main.py');
+        const exec = await container.exec({
+            Cmd: ['sh', '-c', 'echo "run" > /commandListener/commands.txt'],
+            AttachStdin: true,
+            AttachStdout: true,
+            AttachStderr: true,
+            Tty: true,
+        });
+
+        await exec.start({ Detach: false });
     }
 
     /**
@@ -71,17 +103,22 @@ export class ExecutionWsService {
      * @todo Check if the files are base64 encoded.
      */
     async upsertFiles(container: Docker.Container, files: Record<string, string>): Promise<void> {
+        // Construct the command string with all file updates
+        let commandString = '';
         for (const [filename, content] of Object.entries(files)) {
-            const exec = await container.exec({
-                Cmd: ['sh', '-c', `echo "${content}" | base64 -d > /usr/src/app/${filename}`],
-                AttachStdin: true,
-                AttachStdout: true,
-                AttachStderr: true,
-                Tty: true,
-            });
-
-            await exec.start({ Detach: false });
+            commandString += `upsert ${filename} ${content}\n`;
         }
+
+        // Send the command string to the container
+        const exec = await container.exec({
+            Cmd: ['sh', '-c', `echo "${commandString}" > /commandListener/commands.txt`],
+            AttachStdin: true,
+            AttachStdout: true,
+            AttachStderr: true,
+            Tty: true,
+        });
+
+        await exec.start({ Detach: false });
     }
 
     /**
@@ -90,13 +127,16 @@ export class ExecutionWsService {
      * @param { string } input - The input to send.
      */
     async sendInput(container: Docker.Container, input: string): Promise<void> {
-        const stream = await container.attach({
-            hijack: true,
-            stream: true,
-            stdin: true
+        const command = `input ${input}`;
+        const exec = await container.exec({
+            Cmd: ['sh', '-c', `echo "${command}" >> /commandListener/commands.txt`],
+            AttachStdin: true,
+            AttachStdout: true,
+            AttachStderr: true,
+            Tty: true,
         });
-        stream.write(input + '\n');
-        stream.end();
+
+        await exec.start({ Detach: false });
     }
 
     /**

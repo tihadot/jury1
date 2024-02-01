@@ -4,15 +4,14 @@
     align-items: center;
 }
 
-.output-window {
+.output-area {
     border: 1px solid black;
     width: 80%;
     height: 300px;
-    margin-bottom: 10px;
-    overflow-y: scroll;
+    resize: none;
 }
 
-textarea {
+.input-area {
     border: 1px solid black;
     width: 80%;
     height: 150px;

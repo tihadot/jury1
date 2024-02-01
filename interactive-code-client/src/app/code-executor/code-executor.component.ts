@@ -38,8 +38,21 @@ export class CodeExecutorComponent {
    * Starts a new session.
    */
   startSession(): void {
-    this.websocketService.startSession();
     this.output = []; // Clear previous output
+    this.output.push('Starting session...');
+
+    this.websocketService.startSession().then(sessionId => {
+      this.output.push(`Session started with ID: ${sessionId}`);
+      this.setupOutputListener(); // Set up the output listener again for the new session
+    }).catch(error => {
+      this.output.push('Could not start session');
+    });
+  }
+
+  private setupOutputListener(): void {
+    this.websocketService.onOutput(data => {
+      this.output.push(data); // Append output data to the array for display
+    });
   }
 
   /**
@@ -70,5 +83,6 @@ export class CodeExecutorComponent {
    */
   disconnect(): void {
     this.websocketService.disconnect();
+    this.output = [];
   }
 }

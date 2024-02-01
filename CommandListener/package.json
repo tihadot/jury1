@@ -1,0 +1,7 @@
+{
+    "name": "command-listener",
+    "version": "1.0.0",
+    "dependencies": {
+        "chokidar": "^3.5.3"
+    }
+}
