@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  app:
+    container_name: jury1
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: npm run start:dev
+    ports:
+      - 3000:3000
+    environment:
+      DOCKER_RUNTIME: runc
+      DOCKER_IMAGE_PYTHON: python:3.12.0-alpine
+      DOCKER_IMAGE_PYTHON_UNITTEST: python-unittest
+      DOCKER_IMAGE_JAVA: openjdk:22-slim
+      DOCKER_IMAGE_JAVA_JUNIT: java-junit
+
+networks:
+  testing:
+    driver: bridge
