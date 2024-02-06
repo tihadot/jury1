@@ -1,8 +1,11 @@
-# Docker in Docker Image
-FROM docker:dind
+# Base Image
+FROM node:current-alpine
 
-# Install Node.js and NPM
-RUN apk add --update nodejs npm
+# Install Docker CLI
+RUN apk add --no-cache docker-cli
+
+# Install NestJS CLI
+RUN npm install -g @nestjs/cli
 
 # Copy and Install everything
 WORKDIR /usr/src/app
@@ -14,4 +17,4 @@ COPY . .
 EXPOSE 3000
 
 # Start in dev mode for debugging
-CMD ["sh", "start.sh"]
+CMD ["npm", "run", "start:dev"]

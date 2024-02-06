@@ -32,6 +32,9 @@ export class ExecutionService {
     // The docker image to use for the java assignment execution. This image is based on the openjdk image and has JUnit installed. The dockerfile for this image can be found in the Docker/java-junit directory.
     private readonly javaJunitImage = process.env.DOCKER_IMAGE_JAVA_JUNIT || 'java-junit';
 
+    // The temporary directory on the host system to store the files generated in the container
+    private readonly hostTmpDir = process.env.HOST_TMP_DIR || (process.platform === 'win32' ? '//c/tmp' : '/tmp');
+
     /**
      * Creates an instance of ExecutionService.
      * @param { PythonSanitizerService } pythonSanitizerService - The python sanitizer service
@@ -130,8 +133,8 @@ export class ExecutionService {
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
-                // Bind mount the temp directory to the container
-                Binds: [`${tempDir}:/usr/src/app`],
+                // Bind mount the host temp directory to the container
+                Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
             },
         };
@@ -192,8 +195,8 @@ export class ExecutionService {
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
-                // Bind mount the temp directory to the container
-                Binds: [`${tempDir}:/usr/src/app`],
+                // Bind mount the host temp directory to the container
+                Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
             },
         };
@@ -258,8 +261,8 @@ export class ExecutionService {
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
-                // Bind mount the temp directory to the container
-                Binds: [`${tempDir}:/usr/src/app`],
+                // Bind mount the host temp directory to the container
+                Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
             },
         };
@@ -316,8 +319,8 @@ export class ExecutionService {
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
-                // Bind mount the temp directory to the container
-                Binds: [`${tempDir}:/usr/src/app`],
+                // Bind mount the host temp directory to the container
+                Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
             },
         };
@@ -385,8 +388,8 @@ export class ExecutionService {
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
-                // Bind mount the temp directory to the container
-                Binds: [`${tempDir}:/usr/src/app`],
+                // Bind mount the host temp directory to the container
+                Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
             },
         };

@@ -8,15 +8,11 @@ services:
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock
+      # Default to using the host's tmp directory if not set. Windows users will need to set this to e.g. //c/tmp
+      - ${HOST_TMP_DIR:-/tmp}:/tmp
     command: npm run start:dev
     ports:
       - 3000:3000
-    environment:
-      DOCKER_RUNTIME: runc
-      DOCKER_IMAGE_PYTHON: python:3.12.0-alpine
-      DOCKER_IMAGE_PYTHON_UNITTEST: python-unittest
-      DOCKER_IMAGE_JAVA: openjdk:22-slim
-      DOCKER_IMAGE_JAVA_JUNIT: java-junit
 
 networks:
   testing:
