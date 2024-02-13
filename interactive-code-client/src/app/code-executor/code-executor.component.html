@@ -1,18 +1,32 @@
 <div class="code-executor">
-  <button (click)="startSession()">Start Interactive Session</button>
-  <button (click)="disconnect()">End Session</button>
-
-  <textarea class="output-area" [value]="output.join('\n')" #textarea [scrollTop]="textarea.scrollHeight" readonly></textarea>
-
-  <textarea class="input-area" [(ngModel)]="input" placeholder="Enter input here"></textarea>
   <div>
-    <button (click)="sendInput()">Send Input</button>
-    <button (click)="upsertFiles()">Send Input as Files</button>
-    <button (click)="startProgram()">Start Program</button>
+    <label>
+      <input type="radio" name="sessionType" value="python" [(ngModel)]="sessionType" [disabled]="sessionActive"
+        (change)="onSessionTypeChange()"> Python
+    </label>
+    <label>
+      <input type="radio" name="sessionType" value="java" [(ngModel)]="sessionType" [disabled]="sessionActive"
+        (change)="onSessionTypeChange()"> Java
+    </label>
+  </div>
+  <button (click)="startSession()" [disabled]="sessionActive">Start Interactive Session</button>
+  <button (click)="disconnect()" [disabled]="!sessionActive">End Session</button>
+
+  <textarea class="output-area" [value]="output.join('\n')" #textarea [scrollTop]="textarea.scrollHeight"
+    readonly></textarea>
+
+  <textarea class="input-area" [(ngModel)]="input" placeholder="Enter input here"
+    [disabled]="!sessionActive"></textarea>
+  <div>
+    <div *ngIf="sessionType === 'java'">
+      <label for="mainClassName">Main Class Name:</label>
+      <input type="text" [(ngModel)]="mainClassName" placeholder="Enter main class name for Java">
+    </div>
+    <button (click)="sendInput()" [disabled]="!sessionActive">Send Input</button>
+    <button (click)="upsertFiles()" [disabled]="!sessionActive">Send Input as Files</button>
+    <button (click)="startProgram()" [disabled]="!sessionActive">Start Program</button>
   </div>
 
   <h3>Example usage of how to input files as text (content has to be base64 encoded)</h3>
-  <pre>
-    <code [innerHTML]="code"></code>
-  </pre>
+  <pre><code [innerHTML]="currentExampleCode"></code></pre>
 </div>

@@ -63,14 +63,15 @@ export class ExecutionWsGateway {
   }
 
   /**
-   * Handles the startProgram event that signals the container to (re-)start the program. The program is assumed to be called main.py.
+   * Handles the startProgram event that signals the container to (re-)start the program.
+   * @param { { language: string, mainClassName?: string } } data - The language of the program to start (java or python), and the main class name (if java).
    * @param { Socket } client - The client that sent the event.
    */
   @SubscribeMessage('startProgram')
-  async handleStartProgram(@ConnectedSocket() client: Socket) {
+  async handleStartProgram(@MessageBody() data: { language: string, mainClassName?: string }, @ConnectedSocket() client: Socket) {
     const container = this.sessions.get(client.id);
     if (container) {
-      await this.executionWsService.startProgram(container);
+      await this.executionWsService.startProgram(container, data.language, data.mainClassName);
       client.emit('programStarted', 'Program execution has started.');
     } else {
       client.emit('error', 'Session not found');
@@ -79,17 +80,18 @@ export class ExecutionWsGateway {
 
   /**
    * Handles the upsertFiles event that signals the container to create or update the given files.
-   * @param data - The data containing the files to create or update.
+   * @param { { files: Record<string, string>, isJava: boolean } } data - The files to create or update, and whether they are Java files.
    * @param { Socket } client - The client that sent the event.
    */
   @SubscribeMessage('upsertFiles')
-  async handleFileUpdate(@MessageBody() data, @ConnectedSocket() client: Socket) {
+  async handleFileUpdate(@MessageBody() data: { files: Record<string, string>, isJava: boolean }, @ConnectedSocket() client: Socket) {
+    const { files, isJava } = data;
     const container = this.sessions.get(client.id);
     if (container) {
-      await this.executionWsService.upsertFiles(container, JSON.parse(data).files);
-      client.emit('filesUpdated', 'Files have been updated.');
+      await this.executionWsService.upsertFiles(container, files, isJava);
+      client.emit('filesUpdated', 'Files have been updated successfully.');
     } else {
-      client.emit('error', 'Session not found');
+      client.emit('error', 'Session not found.');
     }
   }
 

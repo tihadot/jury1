@@ -7,7 +7,6 @@ import { v4 as uuidv4 } from 'uuid';
 /**
  * This service is responsible for interacting with the Docker API.
  * It is used by the ExecutionWsGateway to start containers and send input to them.
- * Currently only a test with Python is implemented.
  */
 @Injectable()
 export class ExecutionWsService {
@@ -21,6 +20,7 @@ export class ExecutionWsService {
 
     // The docker images to use for the different languages. Make sure that the images are available locally.
     private readonly pythonImage = process.env.DOCKER_IMAGE_PYTHON || 'python-interactive';
+    private readonly javaImage = process.env.DOCKER_IMAGE_JAVA || 'java-interactive';
 
     // Map of session IDs to containers
     private sessionContainers = new Map<string, Docker.Container>();
@@ -39,7 +39,6 @@ export class ExecutionWsService {
 
     /**
      * Starts an interactive python session
-     * @param { Record<string, string> } files - The files of the session (filename: base64 encoded content)
      * @returns { Promise<string> } - The session ID of the started session
      */
     async startPythonSession(): Promise<string> {
@@ -49,6 +48,24 @@ export class ExecutionWsService {
 
         // Start Docker container
         const container = await this.startInteractiveSession(this.pythonImage, tempDir);
+
+        // Register container
+        this.registerContainer(sessionId, container);
+
+        return sessionId; // Return the session ID to the client
+    }
+
+    /**
+     * Starts an interactive java session
+     * @returns { Promise<string> } - The session ID of the started session
+     */
+    async startJavaSession(): Promise<string> {
+        const sessionId = uuidv4();
+        const tempDir = join(__dirname, 'temp', sessionId);
+        mkdirSync(tempDir, { recursive: true });
+
+        // Start Docker container with Java command listener
+        const container = await this.startInteractiveSession(this.javaImage, tempDir);
 
         // Register container
         this.registerContainer(sessionId, container);
@@ -81,12 +98,23 @@ export class ExecutionWsService {
     }
 
     /**
-     * Signals the start of the program in the given container. The program is assumed to be called main.py.
+     * Starts a program execution in the given container. Supports both Python and Java.
      * @param { Docker.Container } container - The container to signal the start to.
+     * @param { string } language - The programming language ('python' or 'java').
+     * @param { string } mainClassName - For Java, the main class to execute.
      */
-    async startProgram(container: Docker.Container): Promise<void> {
+    async startProgram(container: Docker.Container, language: string, mainClassName?: string): Promise<void> {
+        let command;
+        if (language === 'python') {
+            command = 'echo "run" > /commandListener/commands.txt';
+        } else if (language === 'java') {
+            command = `echo "run ${mainClassName}" > /commandListener/commands.txt`;
+        } else {
+            throw new Error('Unsupported programming language');
+        }
+
         const exec = await container.exec({
-            Cmd: ['sh', '-c', 'echo "run" > /commandListener/commands.txt'],
+            Cmd: ['sh', '-c', command],
             AttachStdin: true,
             AttachStdout: true,
             AttachStderr: true,
@@ -97,15 +125,25 @@ export class ExecutionWsService {
     }
 
     /**
-     * Creates or updates the files in the given container.
+     * Creates or updates the files in the given container, handling Java projects differently.
      * @param { Docker.Container } container - The container to create or update the files in.
-     * @param { Record<string, string> } files - The files to update.
-     * @todo Check if the files are base64 encoded.
+     * @param { Record<string, string> } files - The files to update, base64 encoded.
+     * @param { boolean } isJava - Indicates if the operation is for a Java project.
      */
-    async upsertFiles(container: Docker.Container, files: Record<string, string>): Promise<void> {
-        // Construct the command string with all file updates
+    async upsertFiles(container: Docker.Container, files: Record<string, string>, isJava: boolean = false): Promise<void> {
         let commandString = '';
-        for (const [filename, content] of Object.entries(files)) {
+        for (let [filename, content] of Object.entries(files)) {
+            console.log('content:', content);
+            if (isJava) {
+                // For Java files, determine the package structure and adjust the file path accordingly
+                let fileContent = Buffer.from(content, 'base64').toString('utf8');
+                const packageNameMatch = fileContent.match(/^package\s+([a-zA-Z0-9_.]*);/m);
+                if (packageNameMatch) {
+                    const packagePath = packageNameMatch[1].replace(/\./g, '/');
+                    filename = `${packagePath}/${filename}`;
+                }
+            }
+            // For Java and Python, files are base64 encoded
             commandString += `upsert ${filename} ${content}\n`;
         }
 

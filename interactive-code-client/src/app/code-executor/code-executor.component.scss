@@ -2,18 +2,47 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-}
 
-.output-area {
-    border: 1px solid black;
-    width: 80%;
-    height: 300px;
-    resize: none;
-}
+    .output-area,
+    .input-area {
+        border: 1px solid black;
+        width: 80%;
+        resize: none;
+    }
 
-.input-area {
-    border: 1px solid black;
-    width: 80%;
-    height: 150px;
-    resize: none;
+    .output-area {
+        height: 300px;
+        overflow: auto; // Make the output area scrollable
+    }
+
+    .input-area {
+        height: 150px;
+        margin-bottom: 10px; // Ensure some spacing between input area and the code example
+    }
+
+    pre {
+        width: 80%; // Match the width of input and output areas
+        background-color: #f5f5f5; // Light grey background for better readability
+        padding: 1rem;
+        border: 1px solid #ccc; // Light border for the code block
+        border-radius: 5px; // Rounded corners for aesthetics
+        overflow: auto; // Enable scrolling within the <pre> block
+        max-height: 300px; // Set a maximum height to enforce scrolling
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); // Optional: adds subtle shadow for depth
+        margin-bottom: 20px; // Space below the code example
+    }
+
+    .java-main-class-input {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+
+        label {
+            margin-right: 10px;
+        }
+
+        input {
+            flex-grow: 1;
+        }
+    }
 }

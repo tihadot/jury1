@@ -41,7 +41,7 @@ function processCommand(commandLine) {
             }
             break;
         case 'run':
-            // Execute main.py or another specified script
+            // Execute main.py
             executeCommand('python main.py').catch(console.error);
             break;
         case 'upsert':

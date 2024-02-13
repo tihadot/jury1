@@ -24,10 +24,14 @@ export class WebsocketService {
 
   /**
    * Starts a new session.
+   * @param { 'python' | 'java' } sessionType - The type of session to start.
    * @returns { Promise<string> } - The session ID of the started session.
    * @throws { Error } - If the session could not be started.
    */
-  async startSession(): Promise<string> {
+  async startSession(sessionType: 'python' | 'java'): Promise<string> {
+    // Adjust the endpoint based on the session type
+    const endpoint = sessionType === 'python' ? '/execute/startPythonSession' : '/execute/startJavaSession';
+
     if (this.socket.disconnected) {
       this.socket.connect();
     }
@@ -43,7 +47,7 @@ export class WebsocketService {
       });
 
       // Get sessionId from server
-      this.http.post<{ sessionId: string }>(`${this.endpoint}/execute/startPythonSession`, {}
+      this.http.post<{ sessionId: string }>(`${this.endpoint}${endpoint}`, {}
       ).subscribe({
         next: (response) => {
           console.log('Got sessionId from server:', response.sessionId);
@@ -69,18 +73,54 @@ export class WebsocketService {
 
   /**
    * Creates or updates the files in the Docker container.
-   * @param { Record<string, string> } files - The files to update.
+   * @param { string } textInput - The files to update, where key is filename and value is base64-encoded content.
+   * @param { boolean } isJava - Whether the language is Java.
    */
-  upsertFiles(files: string): void {
-    this.socket.emit('upsertFiles', files);
+  upsertFiles(textInput: string, isJava: boolean): void {
+    let parsedInput;
+    try {
+      parsedInput = JSON.parse(textInput);
+    } catch (error) {
+      console.error("Failed to parse input as JSON:", error);
+      return;
+    }
+
+    const { files } = parsedInput;
+
+    if (!files || typeof files !== 'object') {
+      console.error("Invalid files format:", files);
+      return;
+    }
+
+    const data = {
+      files,
+      isJava
+    };
+
+    this.socket.emit('upsertFiles', data);
   }
+
 
   /**
    * Starts the program in the Docker container.
+   * @param { 'python' | 'java' } language - The language of the program.
+   * @param { string } mainClassName - The main class name for Java programs.
+   * @throws { Error } - If the language is not supported or the main class name is missing for Java programs.
    */
-  startProgram(): void {
-    this.socket.emit('startProgram');
+  startProgram(language: 'python' | 'java', mainClassName?: string): void {
+    // Construct the command based on the language
+    let command;
+    if (language === 'python') {
+      command = { language: 'python' };
+    } else if (language === 'java' && mainClassName) {
+      command = { language: 'java', mainClassName: mainClassName };
+    } else {
+      throw new Error('Unsupported programming language or missing main class name for Java');
+    }
+
+    this.socket.emit('startProgram', command);
   }
+
 
   /**
    * Sets up a listener for the output from the server.

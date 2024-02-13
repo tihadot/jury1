@@ -7,7 +7,7 @@ RUN apk add --update python3 && ln -sf python3 /usr/bin/python
 WORKDIR /commandListener
 
 # Copy the command listener script and package.json into the image
-COPY CommandListener/commandListener.js /commandListener/
+COPY CommandListener/commandListenerPython.js /commandListener/commandListener.js
 COPY CommandListener/package.json /commandListener/
 
 # Install NPM dependencies (including chokidar)

@@ -20,4 +20,18 @@ export class ExecutionWsController {
         return { sessionId };
     }
 
+    /**
+     * Starts an interactive java session
+     * @returns { Promise<{ sessionId: string }> } - The session ID of the started session
+     */
+    @Post('/startJavaSession')
+    async startJavaSession(): Promise<{ sessionId: string }> {
+        let sessionId: string;
+
+        sessionId = await this.executionWsService.startJavaSession();
+
+        console.log("Java session started with ID:", sessionId);
+        return { sessionId };
+    }
+
 }
