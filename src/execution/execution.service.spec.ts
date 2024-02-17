@@ -112,30 +112,30 @@ describe('ExecutionService', () => {
      */
     describe('runPythonProject', () => {
         it('should return the output of the project', async () => {
-            const mockMainFile = 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K';
+            const mockMainFile = { 'main.py': 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K' };
             const mockAdditionalFiles = { 'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOg0KICAgIHJldHVybiBmIkhlbGxvLCB7bmFtZX0hIg0K' };
             const expectedResult = { output: 'SGVsbG8sIHdvcmxkIQo=', files: {} };
             expect(await service.runPythonProject(mockMainFile, mockAdditionalFiles, true)).toEqual(expectedResult);
         });
 
         it('should handle non-base64 output for projects', async () => {
-            const mockMainFile = 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K';
+            const mockMainFile = { 'main.py': 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K' };
             const mockAdditionalFiles = { 'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOg0KICAgIHJldHVybiBmIkhlbGxvLCB7bmFtZX0hIg0K' };
             const expectedResult = { output: 'Hello, world!\n', files: {} };
             expect(await service.runPythonProject(mockMainFile, mockAdditionalFiles, false)).toEqual(expectedResult);
         });
 
         it('should throw an error if the input is not valid base64 encoded', async () => {
-            const mockMainFile = 'print("Hello, world!")';
+            const mockMainFile = { 'main.py': 'print("Hello, world!")' };
             const mockAdditionalFiles = { 'helper.py': 'print("Hello, world!")' };
             await expect(service.runPythonProject(mockMainFile, mockAdditionalFiles, true)).rejects.toThrow('Input is not valid base64 encoded');
         });
 
         it('should call the sanitizer with the correct code', async () => {
-            const mockMainFile = 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K';
+            const mockMainFile = { 'main.py': 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K' };
             const mockAdditionalFiles = { 'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOg0KICAgIHJldHVybiBmIkhlbGxvLCB7bmFtZX0hIg0K' };
             await service.runPythonProject(mockMainFile, mockAdditionalFiles, false);
-            expect(pythonSanitizerService.sanitize).toHaveBeenCalledWith(Buffer.from(mockMainFile, 'base64').toString('utf-8'));
+            expect(pythonSanitizerService.sanitize).toHaveBeenCalledWith(Buffer.from(mockMainFile['main.py'], 'base64').toString('utf-8'));
             expect(pythonSanitizerService.sanitize).toHaveBeenCalledWith(Buffer.from(mockAdditionalFiles['helper.py'], 'base64').toString('utf-8'));
         });
     });
