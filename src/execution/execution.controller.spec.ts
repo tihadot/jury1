@@ -42,7 +42,7 @@ describe('ExecutionController', () => {
 
     describe('executePythonProject', () => {
         it('should return the output from the execution service with default base64 setting', async () => {
-            const mockBody = { mainFile: 'encoded_main_file', additionalFiles: { 'file1.py': 'encoded_file1_content', 'file2.py': 'encoded_file2_content' } };
+            const mockBody = { mainFile: { 'main_file.py': 'encoded_main_file_content' }, additionalFiles: { 'file1.py': 'encoded_file1_content', 'file2.py': 'encoded_file2_content' } };
             const expectedResult = { output: 'Project output\n', files: { 'file1.py': { mimeType: 'text/plain', content: 'encoded_file1_content' }, 'file2.py': { mimeType: 'text/plain', content: 'encoded_file2_content' } } };
             jest.spyOn(executionService, 'runPythonProject').mockResolvedValue(expectedResult);
 
@@ -51,7 +51,7 @@ describe('ExecutionController', () => {
         });
 
         it('should handle non-base64 output for projects', async () => {
-            const mockBody = { mainFile: 'encoded_main_file', additionalFiles: { 'file1.py': 'encoded_file1_content', 'file2.py': 'encoded_file2_content' } };
+            const mockBody = { mainFile: { 'main_file.py': 'encoded_main_file_content' }, additionalFiles: { 'file1.py': 'encoded_file1_content', 'file2.py': 'encoded_file2_content' } };
             const expectedResult = { output: 'Project output\n', files: { 'file1.py': { mimeType: 'text/plain', content: 'encoded_file1_content' }, 'file2.py': { mimeType: 'text/plain', content: 'encoded_file2_content' } } };
             jest.spyOn(executionService, 'runPythonProject').mockResolvedValue(expectedResult);
 

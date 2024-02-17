@@ -102,14 +102,14 @@ export class ExecutionService {
 
     /**
      * Runs the given python project code in a docker container. Supports multiple files and user generated file output
-     * @param { string } mainFile - The main file of the project (base64 encoded content)
+     * @param { Record<string, string> } mainFile - The main file of the project (filename: base64 encoded content)
      * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
-     * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types and their base64 encoded content
+     * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types, and their base64 encoded content
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
-    async runPythonProject(mainFile: string, additionalFiles: Record<string, string>, shouldOutputBase64: boolean): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
+    async runPythonProject(mainFile: Record<string, string>, additionalFiles: Record<string, string>, shouldOutputBase64: boolean): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(tmpdir(), 'jury1', executionId);
@@ -119,17 +119,21 @@ export class ExecutionService {
         const outputDir = join(tempDir, 'output');
         mkdirSync(outputDir, { recursive: true });
 
-        // Decode and save the main file
-        await this.handleFileOperations(tempDir, { 'main.py': mainFile }, this.pythonSanitizerService);
-        // Decode and save additional files
-        await this.handleFileOperations(tempDir, additionalFiles, this.pythonSanitizerService);
+        // Merge mainFile and additionalFiles for processing
+        const allFiles = { ...mainFile, ...additionalFiles };
+
+        // Decode and save all files
+        await this.handleFileOperations(tempDir, allFiles, this.pythonSanitizerService);
 
         let container: Docker.Container;
         let encodedFiles: { [filename: string]: { mimeType: string, content: string } } = {};
 
+        // Determine the entry point (main file name)
+        const mainFileName = Object.keys(mainFile)[0]; // Assumes only one main file is provided
+
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.pythonImage,
-            Cmd: ['python', 'main.py'],
+            Cmd: ['python', mainFileName],
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
@@ -158,7 +162,6 @@ export class ExecutionService {
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
             await this.stopAndRemoveContainer(container);
-
             rmSync(tempDir, { recursive: true, force: true });
         }
     }
