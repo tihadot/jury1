@@ -45,6 +45,7 @@ export class ExecutionController {
      * Runs the given python project code in a docker container. Supports multiple files and user generated file output
      * @param { Record<string, string> } body.mainFile - The main file of the project (filename: base64 encoded content)
      * @param { Record<string, string> } body.additionalFiles - The additional files of the project (filename: base64 encoded content)
+     * @param { string } body.input - The input for the project (optional)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
      * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types, and their base64 encoded content
      * @throws { BadRequestException } - If the input is not valid base64 encoded
@@ -52,13 +53,13 @@ export class ExecutionController {
      */
     @Post('/python-project')
     async executePythonProject(
-        @Body() body: { mainFile: Record<string, string>; additionalFiles: Record<string, string> },
+        @Body() body: { mainFile: Record<string, string>; additionalFiles: Record<string, string>, input?: string },
         @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
     ): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
         let output: { output: string; files: { [filename: string]: { mimeType: string, content: string } }; };
 
         try {
-            output = await this.executionService.runPythonProject(body.mainFile, body.additionalFiles, shouldOutputBase64);
+            output = await this.executionService.runPythonProject(body.mainFile, body.additionalFiles, shouldOutputBase64, body.input);
         }
         catch (error) {
             throw new BadRequestException(error.message);
@@ -125,6 +126,7 @@ export class ExecutionController {
      * Runs the given java project code in a docker container. Supports multiple files and user generated file output
      * @param { string } body.mainClassName - The main class name of the project
      * @param { Record<string, string> } body.files - The files of the project (filename: base64 encoded content)
+     * @param { string } body.input - The input for the project (optional)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
      * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types and their base64 encoded content
      * @throws { BadRequestException } - If the input is not valid base64 encoded
@@ -132,13 +134,13 @@ export class ExecutionController {
      */
     @Post('/java-project')
     async executeJavaProject(
-        @Body() body: { mainClassName: string; files: Record<string, string> },
+        @Body() body: { mainClassName: string; files: Record<string, string>, input?: string },
         @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
     ): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
         let output: { output: string; files: { [filename: string]: { mimeType: string, content: string } }; };
 
         try {
-            output = await this.executionService.runJavaProject(body.mainClassName, body.files, shouldOutputBase64);
+            output = await this.executionService.runJavaProject(body.mainClassName, body.files, shouldOutputBase64, body.input);
         }
         catch (error) {
             throw new BadRequestException(error.message);

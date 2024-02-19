@@ -105,11 +105,12 @@ export class ExecutionService {
      * @param { Record<string, string> } mainFile - The main file of the project (filename: base64 encoded content)
      * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
+     * @param { string } input - The input for the project (optional)
      * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types, and their base64 encoded content
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
-    async runPythonProject(mainFile: Record<string, string>, additionalFiles: Record<string, string>, shouldOutputBase64: boolean): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
+    async runPythonProject(mainFile: Record<string, string>, additionalFiles: Record<string, string>, shouldOutputBase64: boolean, input?: string): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(tmpdir(), 'jury1', executionId);
@@ -131,9 +132,17 @@ export class ExecutionService {
         // Determine the entry point (main file name)
         const mainFileName = Object.keys(mainFile)[0]; // Assumes only one main file is provided
 
+        let cmd = `python ${mainFileName}`;
+        if (input) {
+            const inputFilePath = join(tempDir, 'input.txt');
+            writeFileSync(inputFilePath, input);
+            // Pass the input file as a command line argument (using cat -e to escape special characters)
+            cmd += ` $(cat -e input.txt)`;
+        }
+
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.pythonImage,
-            Cmd: ['python', mainFileName],
+            Cmd: ['sh', '-c', cmd],
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
@@ -162,6 +171,7 @@ export class ExecutionService {
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
             await this.stopAndRemoveContainer(container);
+
             rmSync(tempDir, { recursive: true, force: true });
         }
     }
@@ -296,11 +306,12 @@ export class ExecutionService {
      * @param { string } mainClassName - The main file of the project (base64 encoded content)
      * @param { Record<string, string> } files - The additional files of the project (filename: base64 encoded content)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
+     * @param { string } input - The input for the project (optional)
      * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types and their base64 encoded content
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
-    async runJavaProject(mainClassName: string, files: Record<string, string>, shouldOutputBase64: boolean): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
+    async runJavaProject(mainClassName: string, files: Record<string, string>, shouldOutputBase64: boolean, input?: string): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(tmpdir(), 'jury1', executionId);
@@ -313,12 +324,20 @@ export class ExecutionService {
         // Decode and save files
         await this.handleFileOperations(tempDir, files, this.javaSanitizerService, true);
 
+        let cmd = `java -cp . ${mainClassName}`;
+        if (input) {
+            const inputFilePath = join(tempDir, 'input.txt');
+            writeFileSync(inputFilePath, input);
+            // Pass the input file as a command line argument (using cat -e to escape special characters)
+            cmd += ` $(cat -e input.txt)`;
+        }
+
         let container: Docker.Container;
         let encodedFiles: { [filename: string]: { content: string, mimeType: string } } = {};
 
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.javaImage,
-            Cmd: ['sh', '-c', `find . -name "*.java" -exec javac {} + && java -cp . ${mainClassName}`],
+            Cmd: ['sh', '-c', `find . -name "*.java" -exec javac {} + && ${cmd}`],
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {

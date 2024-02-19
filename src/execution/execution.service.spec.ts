@@ -131,6 +131,13 @@ describe('ExecutionService', () => {
             await expect(service.runPythonProject(mockMainFile, mockAdditionalFiles, true)).rejects.toThrow('Input is not valid base64 encoded');
         });
 
+        it('should correctly apply the input to the code', async () => {
+            const mockMainFile = { 'main.py': 'aW1wb3J0IHN5cwpwcmludCAoIiIuam9pbihzeXMuYXJndlsxOl0pKTs=' };
+            const mockInput = 'Hello!';
+            const expectedResult = { output: 'Hello!\n', files: {} };
+            expect(await service.runPythonProject(mockMainFile, undefined, false, mockInput)).toEqual(expectedResult);
+        });
+
         it('should call the sanitizer with the correct code', async () => {
             const mockMainFile = { 'main.py': 'ZnJvbSBoZWxwZXIgaW1wb3J0IGdyZWV0DQoNCg0KZGVmIG1haW4oKToNCiAgICBwcmludChncmVldCgid29ybGQiKSkNCg0KDQppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOg0KICAgIG1haW4oKQ0K' };
             const mockAdditionalFiles = { 'helper.py': 'ZGVmIGdyZWV0KG5hbWUpOg0KICAgIHJldHVybiBmIkhlbGxvLCB7bmFtZX0hIg0K' };
@@ -249,6 +256,16 @@ describe('ExecutionService', () => {
                 'Helper.java': 'public class Helper { public static String greet(String name) { return "Hello, " + name + "!"; } }'
             };
             await expect(service.runJavaProject(mockMainClassName, mockFiles, true)).rejects.toThrow('Input is not valid base64 encoded');
+        });
+
+        it('should correctly apply the input to the code', async () => {
+            const mockMainClassName = 'com.jury1.Main';
+            const mockFiles = {
+                'Main.java': 'cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgTWFpbiB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgbWFpbihTdHJpbmdbXSBhcmdzKSB7CiAgICAgICAgZm9yIChTdHJpbmcgcyA6IGFyZ3MpIHsKICAgICAgICAgICAgU3lzdGVtLm91dC5wcmludGxuKHMpOwogICAgICAgIH0KICAgIH0KfQ==',
+            };
+            const mockInput = 'Hello!';
+            const expectedResult = { output: 'Hello!\n', files: {} };
+            expect(await service.runJavaProject(mockMainClassName, mockFiles, false, mockInput)).toEqual(expectedResult);
         });
 
         it('should call the sanitizer with the correct code', async () => {
