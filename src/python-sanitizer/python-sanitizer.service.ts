@@ -15,7 +15,6 @@ export class PythonSanitizerService {
         this.blacklist = [
             // Add patterns that are indicative of potentially dangerous operations
             /import\s+os/,        // Importing 'os' module
-            /import\s+sys/,       // Importing 'sys' module
             /__import__/,         // Using __import__ to dynamically import modules
             /exec\s*\(/,          // 'exec' function
             /eval\s*\(/,          // 'eval' function

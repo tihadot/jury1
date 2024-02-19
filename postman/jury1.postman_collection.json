@@ -102,6 +102,40 @@
 			"response": []
 		},
 		{
+			"name": "Execute Python Project With Input",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"mainFile\": {\r\n        \"main.py\": \"aW1wb3J0IHN5cwpwcmludCAoIiIuam9pbihzeXMuYXJndlsxOl0pKTs=\"\r\n    },\r\n    \"input\": \"Hello!\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/execute/python-project?shouldOutputBase64=false",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"python-project"
+					],
+					"query": [
+						{
+							"key": "shouldOutputBase64",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Execute Python Project With File Output",
 			"request": {
 				"method": "POST",
@@ -216,6 +250,40 @@
 				"body": {
 					"mode": "raw",
 					"raw": "{\r\n    \"mainClassName\": \"com.jury1.Main\",\r\n    \"files\": {\r\n        \"Main.java\": \"cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgTWFpbiB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgbWFpbihTdHJpbmdbXSBhcmdzKSB7CiAgICAgICAgU3RyaW5nIG1lc3NhZ2UgPSBIZWxwZXIuZ3JlZXQoIndvcmxkIik7CiAgICAgICAgU3lzdGVtLm91dC5wcmludGxuKG1lc3NhZ2UpOwogICAgfQp9Cg==\",\r\n        \"Helper.java\": \"cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgSGVscGVyIHsKICAgIHB1YmxpYyBzdGF0aWMgU3RyaW5nIGdyZWV0KFN0cmluZyBuYW1lKSB7CiAgICAgICAgcmV0dXJuICJIZWxsbywgIiArIG5hbWUgKyAiISI7CiAgICB9Cn0=\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/execute/java-project?shouldOutputBase64=false",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"java-project"
+					],
+					"query": [
+						{
+							"key": "shouldOutputBase64",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Execute Java Project With Input",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"mainClassName\": \"com.jury1.Main\",\r\n    \"files\": {\r\n        \"Main.java\": \"cGFja2FnZSBjb20uanVyeTE7CgpwdWJsaWMgY2xhc3MgTWFpbiB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgbWFpbihTdHJpbmdbXSBhcmdzKSB7CiAgICAgICAgZm9yIChTdHJpbmcgcyA6IGFyZ3MpIHsKICAgICAgICAgICAgU3lzdGVtLm91dC5wcmludGxuKHMpOwogICAgICAgIH0KICAgIH0KfQ==\"\r\n    },\r\n    \"input\": \"Hello!\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
