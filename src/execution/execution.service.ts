@@ -35,6 +35,11 @@ export class ExecutionService {
     // The temporary directory on the host system to store the files generated in the container
     private readonly hostTmpDir = process.env.HOST_TMP_DIR || (process.platform === 'win32' ? '//c/tmp' : '/tmp');
 
+    // The limit for CPU usage in the container (in nanoCPUs. 1e9 nanoCPUs = 1 CPU core)
+    private readonly cpuLimit = parseFloat(process.env.CPU_LIMIT || '0.8') * 1e9;
+    // The limit for RAM usage in the container (in bytes)
+    private readonly memoryLimit = this.convertMemoryLimitToBytes(process.env.MEMORY_LIMIT || '1G');
+
     /**
      * Creates an instance of ExecutionService.
      * @param { PythonSanitizerService } pythonSanitizerService - The python sanitizer service
@@ -78,6 +83,8 @@ export class ExecutionService {
             Tty: false,
             HostConfig: {
                 Runtime: this.runtime,
+                NanoCpus: this.cpuLimit,
+                Memory: this.memoryLimit,
             },
         };
 
@@ -149,6 +156,8 @@ export class ExecutionService {
                 // Bind mount the host temp directory to the container
                 Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
+                NanoCpus: this.cpuLimit,
+                Memory: this.memoryLimit,
             },
         };
 
@@ -211,6 +220,8 @@ export class ExecutionService {
                 // Bind mount the host temp directory to the container
                 Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
+                NanoCpus: this.cpuLimit,
+                Memory: this.memoryLimit,
             },
         };
 
@@ -277,6 +288,8 @@ export class ExecutionService {
                 // Bind mount the host temp directory to the container
                 Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
+                NanoCpus: this.cpuLimit,
+                Memory: this.memoryLimit,
             },
         };
 
@@ -344,6 +357,8 @@ export class ExecutionService {
                 // Bind mount the host temp directory to the container
                 Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
+                NanoCpus: this.cpuLimit,
+                Memory: this.memoryLimit,
             },
         };
 
@@ -413,6 +428,8 @@ export class ExecutionService {
                 // Bind mount the host temp directory to the container
                 Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
+                NanoCpus: this.cpuLimit,
+                Memory: this.memoryLimit,
             },
         };
 
@@ -619,5 +636,26 @@ export class ExecutionService {
         }
 
         return encodedFiles;
+    }
+
+    /**
+     * Converts the given memory limit to bytes
+     * @param { string } memoryLimit - The memory limit to convert as a string (e.g. '256M' or '256m' for 256 megabytes, '2G' or '2g' for 2 gigabytes, '512K' or '512k' for 512 kilobytes, or '512' for 512 bytes)
+     * @returns { number } - The memory limit in bytes
+     */
+    private convertMemoryLimitToBytes(memoryLimit: string): number {
+        const memoryLimitUnit = memoryLimit.slice(-1).toLowerCase();
+        const memoryLimitValue = parseInt(memoryLimit.slice(0, -1));
+
+        switch (memoryLimitUnit) {
+            case 'g':
+                return memoryLimitValue * 1024 * 1024 * 1024;
+            case 'm':
+                return memoryLimitValue * 1024 * 1024;
+            case 'k':
+                return memoryLimitValue * 1024;
+            default:
+                return memoryLimitValue;
+        }
     }
 }

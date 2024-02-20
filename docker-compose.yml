@@ -2,7 +2,7 @@ version: '3.8'
 services:
   app:
     container_name: jury1
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     volumes:
@@ -13,6 +13,9 @@ services:
     command: npm run start:dev
     ports:
       - 3000:3000
+    environment:
+      - CPU_LIMIT=${CPU_LIMIT:-0.8}
+      - MEMORY_LIMIT=${MEMORY_LIMIT:-1G}
 
 networks:
   testing:
