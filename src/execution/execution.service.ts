@@ -28,8 +28,8 @@ export class ExecutionService {
     private readonly pythonImage = process.env.DOCKER_IMAGE_PYTHON || 'python:3.12.0-alpine';
     // The docker image to use for the python assignment execution. This image is based on the python image and has the required dependencies installed. The dockerfile for this image can be found in the Docker/python-unittest directory.
     private readonly pythonUnittestImage = process.env.DOCKER_IMAGE_PYTHON_UNITTEST || 'python-unittest';
-    private readonly javaImage = process.env.DOCKER_IMAGE_JAVA || 'openjdk:22-slim';
-    // The docker image to use for the java assignment execution. This image is based on the openjdk image and has JUnit installed. The dockerfile for this image can be found in the Docker/java-junit directory.
+    private readonly javaImage = process.env.DOCKER_IMAGE_JAVA || 'eclipse-temurin:21.0.2_13-jdk-alpine';
+    // The docker image to use for the java assignment execution. This image is based on the eclipse-temurin image and has JUnit installed. The dockerfile for this image can be found in the Docker/java-junit directory.
     private readonly javaJunitImage = process.env.DOCKER_IMAGE_JAVA_JUNIT || 'java-junit';
 
     // The temporary directory on the host system to store the files generated in the container
