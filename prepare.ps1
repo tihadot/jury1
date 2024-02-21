@@ -17,7 +17,7 @@ $DOCKER_IMAGE_PYTHON_UNITTEST = [System.Environment]::GetEnvironmentVariable("DO
 if (-not $DOCKER_IMAGE_PYTHON_UNITTEST) { $DOCKER_IMAGE_PYTHON_UNITTEST = "python-unittest" }
 
 $DOCKER_IMAGE_JAVA = [System.Environment]::GetEnvironmentVariable("DOCKER_IMAGE_JAVA", [System.EnvironmentVariableTarget]::Process)
-if (-not $DOCKER_IMAGE_JAVA) { $DOCKER_IMAGE_JAVA = "openjdk:22-slim" }
+if (-not $DOCKER_IMAGE_JAVA) { $DOCKER_IMAGE_JAVA = "eclipse-temurin:21.0.2_13-jdk-alpine" }
 
 $DOCKER_IMAGE_JAVA_JUNIT = [System.Environment]::GetEnvironmentVariable("DOCKER_IMAGE_JAVA_JUNIT", [System.EnvironmentVariableTarget]::Process)
 if (-not $DOCKER_IMAGE_JAVA_JUNIT) { $DOCKER_IMAGE_JAVA_JUNIT = "java-junit" }
