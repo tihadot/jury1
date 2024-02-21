@@ -1,12 +1,14 @@
 # A Dockerfile for a Java image with JUnit and the custom test execution listener (CustomTestExecutionListener) installed
 
-FROM openjdk:22-slim
+FROM eclipse-temurin:21.0.2_13-jdk-alpine
 
 # Set up working directory
 WORKDIR /usr/src/app
 
-# Install wget
-RUN apt-get update && apt-get install -y wget
+# Install bash, wget and jo (for JSON parsing)
+RUN apk update && apk add --no-cache bash \
+    && apk add --no-cache wget \
+    && apk add --no-cache jo
 
 # JUnit Jupiter API
 RUN mkdir /junit && \
@@ -27,12 +29,5 @@ RUN wget -O /junit/junit-platform-console-standalone-1.9.0.jar "https://repo1.ma
 # JSON Simple
 RUN wget -O /junit/json-simple-1.1.1.jar "https://repo1.maven.org/maven2/com/googlecode/json-simple/json-simple/1.1.1/json-simple-1.1.1.jar"
 
-# jo - JSON output from a shell
-RUN apt-get install -y jo
-
 # Custom JUnit Test Runner
 COPY CustomRunners/CustomTestExecutionListener/target/custom-test-execution-listener-1.0-SNAPSHOT.jar /junit/CustomTestExecutionListener.jar
-
-# Cleanup
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
