@@ -16,8 +16,6 @@ export class JavaSanitizerService {
             // Add patterns that are indicative of potentially dangerous operations
             /Runtime\.getRuntime\(\)\.exec\(/, // Executing shell commands
             /System\.exit/,                   // System exit
-            /new\s+File\(/,                   // File operations
-            /java\.io/,                       // IO operations
             /java\.net/,                      // Network operations
             /javax\.script/,                  // Script engine
         ];
