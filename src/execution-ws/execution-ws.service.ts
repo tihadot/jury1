@@ -22,6 +22,11 @@ export class ExecutionWsService {
     private readonly pythonImage = process.env.DOCKER_IMAGE_PYTHON || 'python-interactive';
     private readonly javaImage = process.env.DOCKER_IMAGE_JAVA || 'java-interactive';
 
+    // The limit for CPU usage in the container (in nanoCPUs. 1e9 nanoCPUs = 1 CPU core)
+    private readonly cpuLimit = parseFloat(process.env.CPU_LIMIT || '0.8') * 1e9;
+    // The limit for RAM usage in the container (in bytes)
+    private readonly memoryLimit = this.convertMemoryLimitToBytes(process.env.MEMORY_LIMIT || '1G');
+
     // Map of session IDs to containers
     private sessionContainers = new Map<string, Docker.Container>();
 
@@ -91,6 +96,8 @@ export class ExecutionWsService {
             WorkingDir: '/commandListener',
             HostConfig: {
                 Runtime: this.runtime,
+                NanoCpus: this.cpuLimit,
+                Memory: this.memoryLimit,
             }
         });
         await container.start();
@@ -210,5 +217,26 @@ export class ExecutionWsService {
     registerContainer(sessionId: string, container: Docker.Container): void {
         this.sessionContainers.set(sessionId, container);
         console.log(`Registering container for session: ${sessionId}`);
+    }
+
+    /**
+     * Converts the given memory limit to bytes
+     * @param { string } memoryLimit - The memory limit to convert as a string (e.g. '256M' or '256m' for 256 megabytes, '2G' or '2g' for 2 gigabytes, '512K' or '512k' for 512 kilobytes, or '512' for 512 bytes)
+     * @returns { number } - The memory limit in bytes
+     */
+    private convertMemoryLimitToBytes(memoryLimit: string): number {
+        const memoryLimitUnit = memoryLimit.slice(-1).toLowerCase();
+        const memoryLimitValue = parseInt(memoryLimit.slice(0, -1));
+
+        switch (memoryLimitUnit) {
+            case 'g':
+                return memoryLimitValue * 1024 * 1024 * 1024;
+            case 'm':
+                return memoryLimitValue * 1024 * 1024;
+            case 'k':
+                return memoryLimitValue * 1024;
+            default:
+                return memoryLimitValue;
+        }
     }
 }
