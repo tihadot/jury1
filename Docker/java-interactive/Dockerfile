@@ -1,11 +1,8 @@
-FROM openjdk:22-slim
+FROM eclipse-temurin:21.0.2_13-jdk-alpine
 
 # Install Node.js and npm
-RUN apt-get update && \
-    apt-get install -y curl && \
-    curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
-    apt-get install -y nodejs && \
-    curl -L https://www.npmjs.com/install.sh | sh
+RUN apk update && apk add --no-cache nodejs \
+    && apk add --no-cache npm
 
 # Set the working directory
 WORKDIR /commandListener
