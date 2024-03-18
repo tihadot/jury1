@@ -1,3 +1,5 @@
+$ErrorActionPreference = 'Stop'
+
 # Load environment variables from .env file
 if (Test-Path .env) {
     Get-Content .env | ForEach-Object {
@@ -25,6 +27,11 @@ if (-not $DOCKER_IMAGE_JAVA_JUNIT) { $DOCKER_IMAGE_JAVA_JUNIT = "java-junit" }
 # Pull Docker images
 docker pull $DOCKER_IMAGE_PYTHON
 docker pull $DOCKER_IMAGE_JAVA
+
+# Maven build for JAVA_JUNIT dependency
+Push-Location -Path ./CustomRunners/CustomTestExecutionListener
+mvn package
+Pop-Location
 
 # Build custom Docker images
 docker build -t $DOCKER_IMAGE_PYTHON_UNITTEST -f ./Docker/python-unittest/Dockerfile .

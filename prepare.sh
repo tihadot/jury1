@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Load environment variables from .env file
 if [ -f .env ]; then
     export $(cat .env | xargs)
@@ -16,12 +18,16 @@ DOCKER_IMAGE_JAVA_JUNIT=${DOCKER_IMAGE_JAVA_JUNIT:-java-junit}
 docker pull "$DOCKER_IMAGE_PYTHON"
 docker pull "$DOCKER_IMAGE_JAVA"
 
+# Maven build for JAVA_JUNIT dependency
+cd CustomRunners/CustomTestExecutionListener
+mvn package
+cd -
+
 # Build custom Docker images
 docker build -t "$DOCKER_IMAGE_PYTHON_UNITTEST" -f ./Docker/python-unittest/Dockerfile .
 docker build -t "$DOCKER_IMAGE_JAVA_JUNIT" -f ./Docker/java-junit/Dockerfile .
 
 # Install gVisor
-set -e
 ARCH=$(uname -m)
 URL=https://storage.googleapis.com/gvisor/releases/release/latest/${ARCH}
 wget ${URL}/runsc ${URL}/runsc.sha512 \
