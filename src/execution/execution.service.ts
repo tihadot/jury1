@@ -16,7 +16,11 @@ import { JavaSanitizerService } from '../java-sanitizer/java-sanitizer.service';
  */
 @Injectable()
 export class ExecutionService {
+    // The Dockerode instance to use for interacting with the Docker API
     private docker: Docker;
+
+    // Map to store the status ('running', 'stopping', 'stopped') of the containers
+    private containerStatuses: Map<string, 'running' | 'stopping' | 'stopped'> = new Map();
 
     // sets the docker runtime to be used (runc (default), runsc, runsc-debug)
     private runtime: string = process.env.DOCKER_RUNTIME ||
@@ -36,6 +40,8 @@ export class ExecutionService {
     private readonly cpuLimit = parseFloat(process.env.CPU_LIMIT || '0.8') * 1e9;
     // The limit for RAM usage in the container (in bytes)
     private readonly memoryLimit = this.convertMemoryLimitToBytes(process.env.MEMORY_LIMIT || '1G');
+    // The limit for the execution time of the code in the container (in milliseconds)
+    private readonly executionTimeLimit = parseInt(process.env.EXECUTION_TIME_LIMIT) || 10000;
 
     /**
      * Creates an instance of ExecutionService.
@@ -511,15 +517,33 @@ export class ExecutionService {
      * Creates and starts a docker container with the given options
      * @param { Docker.ContainerCreateOptions } containerOptions - The options to create the container with
      * @returns { Promise<Docker.Container> } - The created container
-     * @throws { Error } - If the container could not be created or started
+     * @throws { Error } - If the container could not be created or started or if the execution time limit was exceeded
      */
     private async createAndStartContainer(containerOptions: Docker.ContainerCreateOptions): Promise<Docker.Container> {
+        let timeoutHandler: NodeJS.Timeout;
         try {
-            const container = await this.docker.createContainer(containerOptions);
+            const container = await this.docker.createContainer({ ...containerOptions, StopTimeout: 1 });
+            // Set initial status
+            this.containerStatuses.set(container.id, 'running');
             await container.start();
+
+            // Set a timeout to automatically stop and remove the container after the specified time limit
+            timeoutHandler = setTimeout(async () => {
+                if (this.containerStatuses.get(container.id) === 'running') {
+                    console.warn(`Container ${container.id} exceeded execution time limit and will be stopped.`);
+                    await this.stopAndRemoveContainer(container);
+                }
+            }, this.executionTimeLimit);
+
+            // Listen for the container to exit and clear the timeout to prevent unnecessary stop attempts
+            container.wait().then(() => {
+                clearTimeout(timeoutHandler);
+            });
+
             return container;
         } catch (error) {
             console.error('Error creating or starting container:', error);
+            throw error; // Ensure errors are not silently caught
         }
     }
 
@@ -529,12 +553,24 @@ export class ExecutionService {
      * @throws { Error } - If the container could not be stopped or removed
      */
     private async stopAndRemoveContainer(container: Docker.Container): Promise<void> {
+        // console.log('Stopping and removing container:', container.id);
+        const status = this.containerStatuses.get(container.id);
+        // console.log('Container status:', status);
+        if (status !== 'running') {
+            console.warn(`Container ${container.id} is already being stopped or has been stopped.`);
+            return;
+        }
+
         try {
             const containerInfo = await container.inspect();
             if (containerInfo.State.Status !== 'exited') {
+                this.containerStatuses.set(container.id, 'stopping');
                 await container.stop();
+                this.containerStatuses.set(container.id, 'stopped');
             }
             await container.remove();
+            this.containerStatuses.delete(container.id);
+            // console.log(`Container ${container.id} stopped and removed.`);
         } catch (error) {
             console.error('Error stopping or removing container:', error);
         }
