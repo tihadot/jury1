@@ -13,13 +13,13 @@ $DOCKER_RUNTIME = [System.Environment]::GetEnvironmentVariable("DOCKER_RUNTIME",
 if (-not $DOCKER_RUNTIME) { $DOCKER_RUNTIME = "runc" }
 
 $DOCKER_IMAGE_PYTHON = [System.Environment]::GetEnvironmentVariable("DOCKER_IMAGE_PYTHON", [System.EnvironmentVariableTarget]::Process)
-if (-not $DOCKER_IMAGE_PYTHON) { $DOCKER_IMAGE_PYTHON = "python:3.12.0-alpine" }
+if (-not $DOCKER_IMAGE_PYTHON) { $DOCKER_IMAGE_PYTHON = "python:alpine" }
 
 $DOCKER_IMAGE_PYTHON_UNITTEST = [System.Environment]::GetEnvironmentVariable("DOCKER_IMAGE_PYTHON_UNITTEST", [System.EnvironmentVariableTarget]::Process)
 if (-not $DOCKER_IMAGE_PYTHON_UNITTEST) { $DOCKER_IMAGE_PYTHON_UNITTEST = "python-unittest" }
 
 $DOCKER_IMAGE_JAVA = [System.Environment]::GetEnvironmentVariable("DOCKER_IMAGE_JAVA", [System.EnvironmentVariableTarget]::Process)
-if (-not $DOCKER_IMAGE_JAVA) { $DOCKER_IMAGE_JAVA = "eclipse-temurin:21.0.2_13-jdk-alpine" }
+if (-not $DOCKER_IMAGE_JAVA) { $DOCKER_IMAGE_JAVA = "eclipse-temurin:21-jdk-alpine" }
 
 $DOCKER_IMAGE_JAVA_JUNIT = [System.Environment]::GetEnvironmentVariable("DOCKER_IMAGE_JAVA_JUNIT", [System.EnvironmentVariableTarget]::Process)
 if (-not $DOCKER_IMAGE_JAVA_JUNIT) { $DOCKER_IMAGE_JAVA_JUNIT = "java-junit" }

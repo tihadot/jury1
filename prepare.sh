@@ -9,9 +9,9 @@ fi
 
 # Ensure default values are used if no environment variable is set
 DOCKER_RUNTIME=${DOCKER_RUNTIME:-runc}
-DOCKER_IMAGE_PYTHON=${DOCKER_IMAGE_PYTHON:-python:3.12.0-alpine}
+DOCKER_IMAGE_PYTHON=${DOCKER_IMAGE_PYTHON:-python:alpine}
 DOCKER_IMAGE_PYTHON_UNITTEST=${DOCKER_IMAGE_PYTHON_UNITTEST:-python-unittest}
-DOCKER_IMAGE_JAVA=${DOCKER_IMAGE_JAVA:-eclipse-temurin:21.0.2_13-jdk-alpine}
+DOCKER_IMAGE_JAVA=${DOCKER_IMAGE_JAVA:-eclipse-temurin:21-jdk-alpine}
 DOCKER_IMAGE_JAVA_JUNIT=${DOCKER_IMAGE_JAVA_JUNIT:-java-junit}
 
 # Pull Docker images
