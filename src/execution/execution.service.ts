@@ -29,10 +29,10 @@ export class ExecutionService {
     //    'runsc-debug';
 
     // The docker images to use for the different languages. Make sure that the images are available locally.
-    private readonly pythonImage = process.env.DOCKER_IMAGE_PYTHON || 'python:3.12.0-alpine';
+    private readonly pythonImage = process.env.DOCKER_IMAGE_PYTHON || 'python:alpine';
     // The docker image to use for the python assignment execution. This image is based on the python image and has the required dependencies installed. The dockerfile for this image can be found in the Docker/python-unittest directory.
     private readonly pythonUnittestImage = process.env.DOCKER_IMAGE_PYTHON_UNITTEST || 'python-unittest';
-    private readonly javaImage = process.env.DOCKER_IMAGE_JAVA || 'eclipse-temurin:21.0.2_13-jdk-alpine';
+    private readonly javaImage = process.env.DOCKER_IMAGE_JAVA || 'eclipse-temurin:21-jdk-alpine';
     // The docker image to use for the java assignment execution. This image is based on the eclipse-temurin image and has JUnit installed. The dockerfile for this image can be found in the Docker/java-junit directory.
     private readonly javaJunitImage = process.env.DOCKER_IMAGE_JAVA_JUNIT || 'java-junit';
 
@@ -412,7 +412,7 @@ export class ExecutionService {
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.javaJunitImage,
             // Finds all java files in the current directory structure and compiles them. Then runs the tests with JUnit. If the compilation fails, a corresponding error is returned.
-            Cmd: ['bash', '-c', `
+            Cmd: ['sh', '-c', `
             if ! find . -name "*.java" -exec javac -cp .:/junit/* {} + > compile_errors.txt 2>&1; then
                 # create json file using jo (included in the provided docker image)
                 echo "[" > test-results.json
@@ -610,14 +610,13 @@ export class ExecutionService {
         isJava: boolean = false,
         isInputBase64: boolean = true
     ): Promise<void> {
-        for (const [filename, content] of Object.entries(files)) {
+        const operations = Object.entries(files).map(async ([filename, content]) => {
             let fileContent = isInputBase64 ? this.handleBase64Input(content) : content;
             if (sanitizerService) {
                 fileContent = sanitizerService.sanitize(fileContent);
             }
 
             let filePath = join(tempDir, filename);
-
             if (isJava) {
                 const packageNameMatch = fileContent.match(/^package\s+([a-zA-Z0-9_.]*);/m);
                 if (packageNameMatch) {
@@ -628,8 +627,11 @@ export class ExecutionService {
                 }
             }
 
-            writeFileSync(filePath, fileContent);
-        }
+            return fs.promises.writeFile(filePath, fileContent);
+        });
+
+        // Wait for all file operations to complete
+        await Promise.all(operations);
     }
 
     /**
@@ -638,7 +640,7 @@ export class ExecutionService {
      * @param { string } tempDir - The temporary directory to save the files in
      * @returns { Promise<{ [filename: string]: { mimeType: string, content: string } }> } - The generated files, their mime types and their base64 encoded content
      */
-    async retrieveAndEncodeFiles(container: Docker.Container, tempDir: string): Promise<{ [filename: string]: { mimeType: string, content: string } }> {
+    private async retrieveAndEncodeFiles(container: Docker.Container, tempDir: string): Promise<{ [filename: string]: { mimeType: string, content: string } }> {
         const encodedFiles: { [filename: string]: { mimeType: string, content: string } } = {};
 
         try {
