@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import * as Docker from 'dockerode';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
@@ -7,6 +7,7 @@ import { tmpdir } from 'os';
 import * as fs from 'fs';
 import { JavaSanitizerService } from '../java-sanitizer/java-sanitizer.service';
 import { IoService } from '../io/io.service';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 /**
  * @class JavaExecutionService - Service that handles the execution of code
@@ -33,6 +34,7 @@ export class JavaExecutionService {
      * @param { JavaSanitizerService } javaSanitizerService - The java sanitizer service
      */
     constructor(
+        @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
         private readonly ioService: IoService,
         private readonly javaSanitizerService: JavaSanitizerService
     ) { }
@@ -166,13 +168,14 @@ export class JavaExecutionService {
 
     /**
      * Runs the tests for the given java assignment code in a docker container
+     * @param { string } mainClassName - The main file of the project (base64 encoded content)
      * @param { Record<string, string> } files - The additional files of the project (filename: base64 encoded content)
      * @param { Record<string, string> } testFiles - The test files of the project (filename: base64 encoded content)
      * @returns { Promise<{ testResults: JSON, testsPassed: boolean, score: number }> } - The test results, whether the tests passed and the score (number of passed tests / total number of tests)
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
-    async runJavaAssignment(files: Record<string, string>, testFiles: Record<string, string>): Promise<{ testResults: JSON, testsPassed: boolean, score: number }> {
+    async runJavaAssignment(mainClassName: string, files: Record<string, string>, testFiles: Record<string, string>): Promise<{ output: string, testResults: JSON, testsPassed: boolean, score: number }> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(tmpdir(), 'jury1', executionId);
@@ -189,17 +192,31 @@ export class JavaExecutionService {
             Image: this.javaJunitImage,
             // Finds all java files in the current directory structure and compiles them. Then runs the tests with JUnit. If the compilation fails, a corresponding error is returned.
             Cmd: ['sh', '-c', `
-            if ! find . -name "*.java" -exec javac -cp .:/junit/* {} + > compile_errors.txt 2>&1; then
-                # create json file using jo (included in the provided docker image)
-                echo "[" > test-results.json
-                jo -p test=Compilation status=FAILED exception=@compile_errors.txt >> /usr/src/app/test-results.json
-                echo "]" >> test-results.json
-                exit 1
-            else
+                START_COMPILE=$(date +%s%3N);
+                if ! find . -name "*.java" -exec javac -cp .:/junit/* {} + > compile_errors.txt 2>&1; then
+                    # create json file using jo (included in the provided docker image)
+                    echo "[" > test-results.json
+                    jo -p test=Compilation status=FAILED exception=@compile_errors.txt >> /usr/src/app/test-results.json
+                    echo "]" >> test-results.json
+                    exit 1
+                else
+                    END_COMPILE=$(date +%s%3N);
+                    COMPILE_DURATION=$((END_COMPILE-START_COMPILE));
+                    echo "Compilation time: $COMPILE_DURATION milliseconds.";
+                fi
+
+                START_EXECUTION=$(date +%s%3N);
+                java -cp . ${mainClassName} > program_output.txt
+                END_EXECUTION=$(date +%s%3N);
+                EXECUTION_DURATION=$((END_EXECUTION-START_EXECUTION));
+                echo "Execution time: $EXECUTION_DURATION milliseconds.";
+
+                START_TESTS=$(date +%s%3N);
                 java -cp .:/junit/* org.junit.platform.console.ConsoleLauncher --scan-classpath --disable-ansi-colors --disable-banner --details=none
-                exit 0
-            fi
-        `],
+                END_TESTS=$(date +%s%3N);
+                TESTS_DURATION=$((END_TESTS-START_TESTS));
+                echo "Testing time: $TESTS_DURATION milliseconds.";
+            `],
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
@@ -218,8 +235,19 @@ export class JavaExecutionService {
             // Create and start the Docker container
             container = await this.ioService.createAndStartContainer(containerOptions);
 
+            let output = await this.ioService.getContainerOutput(container);
+
             // Wait for the container to finish executing
             const containerEndStatus = await container.wait();
+
+            // Read the program output from the file
+            const programOutputPath = `${tempDir}/program_output.txt`;
+            let programOutput = '';
+            try {
+                programOutput = fs.readFileSync(programOutputPath, 'utf8');
+            } catch (error) {
+
+            }
 
             // Read the test results from the file
             const resultsPath = `${tempDir}/test-results.json`;
@@ -236,7 +264,9 @@ export class JavaExecutionService {
             // Calculate score as a percentage
             score = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
 
-            return { testResults: jsonResults, testsPassed, score };
+            this.logger.verbose(`[Container ${container.id}] ${output}\n`);
+
+            return { output: programOutput, testResults: jsonResults, testsPassed, score };
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
             await this.ioService.stopAndRemoveContainer(container);

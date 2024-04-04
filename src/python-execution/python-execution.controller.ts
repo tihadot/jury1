@@ -45,7 +45,8 @@ export class PythonExecutionController {
      * Runs the given python project code in a docker container. Supports multiple files and user generated file output
      * @param { Record<string, string> } body.mainFile - The main file of the project (filename: base64 encoded content)
      * @param { Record<string, string> } body.additionalFiles - The additional files of the project (filename: base64 encoded content)
-     * @param { string } body.input - The input for the project (optional)
+     * @param { string } body.runMethod - The method to run
+     * @param { string } body.input - The input for the method (optional)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded (default: true)
      * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types, and their base64 encoded content
      * @throws { BadRequestException } - If the input is not valid base64 encoded
@@ -53,13 +54,13 @@ export class PythonExecutionController {
      */
     @Post('/python-project')
     async executePythonProject(
-        @Body() body: { mainFile: Record<string, string>; additionalFiles: Record<string, string>, input?: string },
+        @Body() body: { mainFile: Record<string, string>; additionalFiles: Record<string, string>, runMethod: string, input?: string },
         @Query('shouldOutputBase64', new DefaultValuePipe(true), ParseBoolPipe) shouldOutputBase64: boolean
     ): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
         let output: { output: string; files: { [filename: string]: { mimeType: string, content: string } }; };
 
         try {
-            output = await this.pythonExecutionService.runPythonProject(body.mainFile, body.additionalFiles, shouldOutputBase64, body.input);
+            output = await this.pythonExecutionService.runPythonProject(body.mainFile, body.additionalFiles, shouldOutputBase64, body.runMethod, body.input);
         }
         catch (error) {
             throw new BadRequestException(error.message);
@@ -71,26 +72,29 @@ export class PythonExecutionController {
 
     /**
      * Runs the tests for the given python assignment code in a docker container
-     * @param { Record<string, string> } body.files - The files of the project (filename: base64 encoded content)
+     * @param { Record<string, string> } body.mainFile - The main file of the project (filename: base64 encoded content)
+     * @param { Record<string, string> } body.additionalFiles - The additional files of the project (filename: base64 encoded content)
      * @param { Record<string, string> } body.testFiles - The test files of the project (filename (pattern: test_*.py): base64 encoded content)
-     * @returns { Promise<{ testResults: JSON, testsPassed: boolean, score: number }> } - The test results, whether the tests passed and the score (number of passed tests / total number of tests)
+     * @param { string } body.runMethod - The method to run (optional)
+     * @param { string } body.input - The input for the method (optional)
+     * @returns { Promise<{ output: string, testResults: JSON, testsPassed: boolean, score: number }> } - The program output, test results, whether the tests passed and the score (number of passed tests / total number of tests)
      * @throws { BadRequestException } - If the input is not valid base64 encoded
      * @throws { BadRequestException } - If the code is not safe to execute
      */
     @Post('/python-assignment')
     async executePythonAssignment(
-        @Body() body: { files: Record<string, string>; testFiles: Record<string, string> },
-    ): Promise<{ testResults: JSON, testsPassed: boolean, score: number } | BadRequestException> {
-        let output: { testResults: JSON; testsPassed: boolean, score: number };
+        @Body() body: { mainFile: Record<string, string>; additionalFiles: Record<string, string>, testFiles: Record<string, string>, runMethod?: string, input?: string },
+    ): Promise<{ output: string, testResults: JSON, testsPassed: boolean, score: number } | BadRequestException> {
+        let output: { output: string, testResults: JSON; testsPassed: boolean, score: number };
 
         try {
-            output = await this.pythonExecutionService.runPythonAssignment(body.files, body.testFiles);
+            output = await this.pythonExecutionService.runPythonAssignment(body.mainFile, body.additionalFiles, body.testFiles, body.runMethod, body.input);
         }
         catch (error) {
             throw new BadRequestException(error.message);
         }
 
         console.log("output: ", output);
-        return { testResults: output.testResults, testsPassed: output.testsPassed, score: output.score };
+        return { output: output.output, testResults: output.testResults, testsPassed: output.testsPassed, score: output.score };
     }
 }

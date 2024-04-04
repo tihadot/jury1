@@ -27,10 +27,12 @@
     "@types/dockerode": "^3.3.23",
     "dockerode": "^4.0.0",
     "mime-types": "^2.1.35",
+    "nest-winston": "^1.9.4",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
     "tar-fs": "^3.0.4",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "winston": "^3.13.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

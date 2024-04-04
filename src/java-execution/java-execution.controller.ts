@@ -71,26 +71,27 @@ export class JavaExecutionController {
 
     /**
      * Runs the tests for the given java assignment code in a docker container
+     * @param { string } body.mainClassName - The main class name of the project
      * @param { Record<string, string> } body.files - The files of the project (filename: base64 encoded content)
      * @param { Record<string, string> } body.testFiles - The test files of the project (filename: base64 encoded content)
-     * @returns { Promise<{ testResults: JSON, testsPassed: boolean, score: number }> } - The test results, whether the tests passed and the score (number of passed tests / total number of tests)
+     * @returns { Promise<{ output: string, testResults: JSON, testsPassed: boolean, score: number }> } - The program output, test results, whether the tests passed and the score (number of passed tests / total number of tests)
      * @throws { BadRequestException } - If the input is not valid base64 encoded
      * @throws { BadRequestException } - If the code is not safe to execute
      */
     @Post('/java-assignment')
     async executeJavaAssignment(
-        @Body() body: { files: Record<string, string>; testFiles: Record<string, string> }
-    ): Promise<{ testResults: JSON, testsPassed: boolean, score: number }> {
-        let output: { testResults: JSON; testsPassed: boolean, score: number };
+        @Body() body: { mainClassName: string, files: Record<string, string>; testFiles: Record<string, string> }
+    ): Promise<{ output: string, testResults: JSON, testsPassed: boolean, score: number }> {
+        let output: { output: string, testResults: JSON; testsPassed: boolean, score: number };
 
         try {
-            output = await this.javaExecutionService.runJavaAssignment(body.files, body.testFiles);
+            output = await this.javaExecutionService.runJavaAssignment(body.mainClassName, body.files, body.testFiles);
         }
         catch (error) {
             throw new BadRequestException(error.message);
         }
 
         console.log("output: ", output);
-        return { testResults: output.testResults, testsPassed: output.testsPassed, score: output.score };
+        return { output: output.output, testResults: output.testResults, testsPassed: output.testsPassed, score: output.score };
     }
 }
