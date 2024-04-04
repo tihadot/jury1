@@ -1,5 +1,6 @@
-import { Controller, Post, Body, Query, ParseBoolPipe, DefaultValuePipe, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Query, ParseBoolPipe, DefaultValuePipe, BadRequestException, Inject, Logger } from '@nestjs/common';
 import { PythonExecutionService } from './python-execution.service';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
 /**
  * @class PythonExecutionController - Controller that handles the execution of code
@@ -9,9 +10,13 @@ export class PythonExecutionController {
 
     /**
      * Creates an instance of ExecutionController.
+     * @param { Logger } logger - The logger service
      * @param { PythonExecutionService } pythonExecutionService - The python execution service
      */
-    constructor(private readonly pythonExecutionService: PythonExecutionService) { }
+    constructor(
+        @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: Logger,
+        private readonly pythonExecutionService: PythonExecutionService
+    ) { }
 
     /**
      * Runs the given python code in a docker container
@@ -37,7 +42,7 @@ export class PythonExecutionController {
             throw new BadRequestException(error.message);
         }
 
-        console.log("output: ", output);
+        this.logger.debug("output: ", output);
         return { output };
     }
 
@@ -66,7 +71,7 @@ export class PythonExecutionController {
             throw new BadRequestException(error.message);
         }
 
-        console.log("output: ", output);
+        this.logger.debug("output: ", output);
         return output;
     }
 
@@ -94,7 +99,7 @@ export class PythonExecutionController {
             throw new BadRequestException(error.message);
         }
 
-        console.log("output: ", output);
+        this.logger.debug("output: ", output);
         return { output: output.output, testResults: output.testResults, testsPassed: output.testsPassed, score: output.score };
     }
 }

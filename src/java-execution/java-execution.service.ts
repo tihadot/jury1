@@ -34,6 +34,8 @@ export class JavaExecutionService {
 
     /**
      * Creates an instance of JavaExecutionService.
+     * @param { Logger } logger - The logger service
+     * @param { IoService } ioService - The IO service
      * @param { JavaSanitizerService } javaSanitizerService - The java sanitizer service
      */
     constructor(
@@ -193,7 +195,7 @@ export class JavaExecutionService {
 
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.javaJunitImage,
-            // Finds all java files in the current directory structure and compiles them. Then runs the tests with JUnit. If the compilation fails, a corresponding error is returned.
+            // Finds all java files in the current directory structure, compiles them and executes the main class. Then runs the tests with JUnit. If the compilation fails, a corresponding error is returned.
             Cmd: ['sh', '-c', `
                 START_COMPILE=$(date +%s%3N);
                 if ! find . -name "*.java" -exec javac -cp .:/junit/* {} + > compile_errors.txt 2>&1; then
@@ -205,20 +207,20 @@ export class JavaExecutionService {
                 else
                     END_COMPILE=$(date +%s%3N);
                     COMPILE_DURATION=$((END_COMPILE-START_COMPILE));
-                    echo "Compilation time: $COMPILE_DURATION milliseconds.";
+                    echo "Java Compilation time: $COMPILE_DURATION milliseconds.";
                 fi
 
                 START_EXECUTION=$(date +%s%3N);
                 java -cp . ${mainClassName} > program_output.txt
                 END_EXECUTION=$(date +%s%3N);
                 EXECUTION_DURATION=$((END_EXECUTION-START_EXECUTION));
-                echo "Execution time: $EXECUTION_DURATION milliseconds.";
+                echo "Java Execution time: $EXECUTION_DURATION milliseconds.";
 
                 START_TESTS=$(date +%s%3N);
                 java -cp .:/junit/* org.junit.platform.console.ConsoleLauncher --scan-classpath --disable-ansi-colors --disable-banner --details=none
                 END_TESTS=$(date +%s%3N);
                 TESTS_DURATION=$((END_TESTS-START_TESTS));
-                echo "Testing time: $TESTS_DURATION milliseconds.";
+                echo "Java Testing time: $TESTS_DURATION milliseconds.";
             `],
             WorkingDir: '/usr/src/app',
             Tty: false,
