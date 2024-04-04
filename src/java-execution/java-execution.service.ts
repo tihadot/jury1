@@ -31,6 +31,8 @@ export class JavaExecutionService {
 
     /**
      * Creates an instance of JavaExecutionService.
+     * @param { Logger } logger - The logger service
+     * @param { IoService } ioService - The IO service
      * @param { JavaSanitizerService } javaSanitizerService - The java sanitizer service
      */
     constructor(

@@ -22,6 +22,7 @@ export class IoService {
 
     /**
      * Creates an instance of IoService.
+     * @param { LoggerService } logger - The logger service
      */
     constructor(@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: LoggerService) {
         // Choose the correct Docker configuration based on the environment

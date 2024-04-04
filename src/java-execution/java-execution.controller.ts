@@ -1,5 +1,6 @@
-import { Controller, Post, Body, Query, ParseBoolPipe, DefaultValuePipe, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Query, ParseBoolPipe, DefaultValuePipe, BadRequestException, Logger, Inject } from '@nestjs/common';
 import { JavaExecutionService } from './java-execution.service';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
 /**
  * @class JavaExecutionController - Controller that handles the execution of code
@@ -9,9 +10,13 @@ export class JavaExecutionController {
 
     /**
      * Creates an instance of JavaExecutionController.
+     * @param { Logger } logger - The logger service
      * @param { ExecutionService } javaExecutionService - The java execution service
      */
-    constructor(private readonly javaExecutionService: JavaExecutionService) { }
+    constructor(
+        @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: Logger,
+        private readonly javaExecutionService: JavaExecutionService
+    ) { }
 
     /**
      * Runs the given java code in a docker container
@@ -37,7 +42,7 @@ export class JavaExecutionController {
             throw new BadRequestException(error.message);
         }
 
-        console.log("output: ", output);
+        this.logger.debug("output: ", output);
         return { output };
     }
 
@@ -65,7 +70,7 @@ export class JavaExecutionController {
             throw new BadRequestException(error.message);
         }
 
-        console.log("output: ", output);
+        this.logger.debug("output: ", output);
         return output;
     }
 
@@ -91,7 +96,7 @@ export class JavaExecutionController {
             throw new BadRequestException(error.message);
         }
 
-        console.log("output: ", output);
+        this.logger.debug("output: ", output);
         return { output: output.output, testResults: output.testResults, testsPassed: output.testsPassed, score: output.score };
     }
 }
