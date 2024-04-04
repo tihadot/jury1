@@ -107,7 +107,8 @@ export class IoService {
             });
 
             const startupTime = IoService.hrtimeToMilliseconds(startHrTime);
-            this.logger.verbose(`[Container ${container.id}] Container started in ${startupTime}ms.`);
+
+            this.logger.verbose(`[Container ${container.id}] ${containerOptions.Image} container created and started in ${startupTime}ms.`);
 
             return container;
         } catch (error) {
