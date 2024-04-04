@@ -96,12 +96,13 @@ export class PythonExecutionService {
      * @param { Record<string, string> } mainFile - The main file of the project (filename: base64 encoded content)
      * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
      * @param { boolean } shouldOutputBase64 - Whether the result should be base64 encoded
-     * @param { string } input - The input for the project (optional)
+     * @param { string } runMethod - The method to run
+     * @param { string } input - The input for the method (optional)
      * @returns { Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> } - The output of the code, the generated files, their mime types, and their base64 encoded content
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
-    async runPythonProject(mainFile: Record<string, string>, additionalFiles: Record<string, string>, shouldOutputBase64: boolean, input?: string): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
+    async runPythonProject(mainFile: Record<string, string>, additionalFiles: Record<string, string>, shouldOutputBase64: boolean, runMethod: string, input?: string): Promise<{ output: string, files: { [filename: string]: { mimeType: string, content: string } } }> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(tmpdir(), 'jury1', executionId);
@@ -123,12 +124,18 @@ export class PythonExecutionService {
         // Determine the entry point (main file name)
         const mainFileName = Object.keys(mainFile)[0]; // Assumes only one main file is provided
 
-        let cmd = `python ${mainFileName}`;
-        if (input) {
+        let cmd = 'echo "No program to run"';
+        if (mainFileName && runMethod && mainFileName !== '' && runMethod !== '') {
+            const mainFilePath = join(tempDir, 'mainFileName.txt');
+            writeFileSync(mainFilePath, mainFileName.replace('.py', ''));
+            const runMethodFilePath = join(tempDir, 'runMethod.txt');
+            writeFileSync(runMethodFilePath, runMethod);
+            if (!input) {
+                input = '';
+            }
             const inputFilePath = join(tempDir, 'input.txt');
             writeFileSync(inputFilePath, input);
-            // Pass the input file as a command line argument (using cat -e to escape special characters)
-            cmd += ` $(cat -e input.txt)`;
+            cmd = `python -c "import $(cat -e mainFileName.txt); $(cat -e mainFileName.txt).$(cat -e runMethod.txt)($(cat -e input.txt))"`;
         }
 
         const containerOptions: Docker.ContainerCreateOptions = {
@@ -170,32 +177,57 @@ export class PythonExecutionService {
 
     /**
      * Runs the tests for the given python assignment code in a docker container
-     * @param { Record<string, string> } files - The files of the project (filename: base64 encoded content)
+     * @param { Record<string, string> } mainFile - The main file of the project (filename: base64 encoded content)
+     * @param { Record<string, string> } additionalFiles - The additional files of the project (filename: base64 encoded content)
      * @param { Record<string, string> } testFiles - The test files of the project (filename (pattern: test_*.py): base64 encoded content)
+     * @param { string } runMethod - The method to run (optional)
+     * @param { string } input - The input for the method (optional)
      * @returns { Promise<{ testResults: JSON, testsPassed: boolean, score: number }> } - The test results, whether the tests passed and the score (number of passed tests / total number of tests)
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
-    async runPythonAssignment(files: Record<string, string>, testFiles: Record<string, string>): Promise<{ testResults: JSON, testsPassed: boolean, score: number }> {
+    async runPythonAssignment(mainFile: Record<string, string>, additionalFiles: Record<string, string>, testFiles: Record<string, string>, runMethod?: string, input?: string): Promise<{ output: string, testResults: JSON, testsPassed: boolean, score: number }> {
         // Create a unique temporary directory for this execution
         const executionId = uuidv4();
         const tempDir = join(tmpdir(), 'jury1', executionId);
         mkdirSync(tempDir, { recursive: true });
 
-        // Decode and save files
-        await this.ioService.handleFileOperations(tempDir, files, this.pythonSanitizerService);
+        // Merge mainFile and additionalFiles for processing
+        const allFiles = { ...mainFile, ...additionalFiles };
+
+        // Decode and save all files
+        await this.ioService.handleFileOperations(tempDir, allFiles, this.pythonSanitizerService);
+
         // Decode and save test files
         await this.ioService.handleFileOperations(tempDir, testFiles);
 
         let container: Docker.Container;
 
+        // Determine the entry point (main file name)
+        const mainFileName = Object.keys(mainFile)[0]; // Assumes only one main file is provided
+
+        let cmd = 'echo "No program to run"';
+        if (mainFileName && runMethod && mainFileName !== '' && runMethod !== '') {
+            const mainFilePath = join(tempDir, 'mainFileName.txt');
+            writeFileSync(mainFilePath, mainFileName.replace('.py', ''));
+            const runMethodFilePath = join(tempDir, 'runMethod.txt');
+            writeFileSync(runMethodFilePath, runMethod);
+            if (!input) {
+                input = '';
+            }
+            const inputFilePath = join(tempDir, 'input.txt');
+            writeFileSync(inputFilePath, input);
+            cmd = `python -c "import $(cat -e mainFileName.txt); $(cat -e mainFileName.txt).$(cat -e runMethod.txt)($(cat -e input.txt))"`;
+        }
+
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.pythonUnittestImage,
-            // Runs the tests discovered by unittest
+            // Runs the program & tests discovered by unittest
             Cmd: ['sh', '-c', `
-            python /custom-test-runner/json_test_runner.py &&
-            (exit 0) ||
-            (exit 1)
+                ${cmd},
+                python /custom-test-runner/json_test_runner.py &> /dev/null &&
+                (exit 0) ||
+                (exit 1)
             `],
             WorkingDir: '/usr/src/app',
             Tty: false,
@@ -218,6 +250,8 @@ export class PythonExecutionService {
             // Wait for the container to finish executing
             const containerEndStatus = await container.wait();
 
+            let output = await this.ioService.getContainerOutput(container);
+
             // Read the test results from the file
             const resultsPath = `${tempDir}/test-results.json`;
             const testResults = fs.readFileSync(resultsPath, 'utf8');
@@ -233,7 +267,7 @@ export class PythonExecutionService {
             // Calculate score as a percentage
             score = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
 
-            return { testResults: jsonResults, testsPassed, score };
+            return { output: output, testResults: jsonResults, testsPassed, score };
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
             await this.ioService.stopAndRemoveContainer(container);

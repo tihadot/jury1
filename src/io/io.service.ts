@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, LoggerService } from '@nestjs/common';
 import * as Docker from 'dockerode';
 import { mkdirSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
@@ -7,6 +7,7 @@ import * as tar from 'tar-fs';
 import * as mime from 'mime-types';
 import { PythonSanitizerService } from '../python-sanitizer/python-sanitizer.service';
 import { JavaSanitizerService } from '../java-sanitizer/java-sanitizer.service';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @Injectable()
 export class IoService {
@@ -22,7 +23,7 @@ export class IoService {
     /**
      * Creates an instance of IoService.
      */
-    constructor() {
+    constructor(@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: LoggerService) {
         // Choose the correct Docker configuration based on the environment
         const isWindows = process.platform === "win32";
         this.docker = new Docker(isWindows ? { socketPath: '//./pipe/docker_engine' } : { socketPath: '/var/run/docker.sock' });
@@ -82,6 +83,8 @@ export class IoService {
      * @throws { Error } - If the container could not be created or started or if the execution time limit was exceeded
      */
     async createAndStartContainer(containerOptions: Docker.ContainerCreateOptions): Promise<Docker.Container> {
+        const startHrTime = process.hrtime.bigint();
+
         let timeoutHandler: NodeJS.Timeout;
         try {
             const container = await this.docker.createContainer({ ...containerOptions, StopTimeout: 1 });
@@ -92,7 +95,7 @@ export class IoService {
             // Set a timeout to automatically stop and remove the container after the specified time limit
             timeoutHandler = setTimeout(async () => {
                 if (this.containerStatuses.get(container.id) === 'running') {
-                    console.warn(`Container ${container.id} exceeded execution time limit and will be stopped.`);
+                    this.logger.warn(`[Container ${container.id}] Request exceeded execution time limit and will be stopped.`);
                     await this.stopAndRemoveContainer(container);
                 }
             }, this.executionTimeLimit);
@@ -102,10 +105,13 @@ export class IoService {
                 clearTimeout(timeoutHandler);
             });
 
+            const startupTime = IoService.hrtimeToMilliseconds(startHrTime);
+            this.logger.verbose(`[Container ${container.id}] Container started in ${startupTime}ms.`);
+
             return container;
         } catch (error) {
-            console.error('Error creating or starting container:', error);
-            throw error; // Ensure errors are not silently caught
+            this.logger.error('Error creating or starting container:', error);
+            throw error;
         }
     }
 
@@ -115,11 +121,10 @@ export class IoService {
      * @throws { Error } - If the container could not be stopped or removed
      */
     async stopAndRemoveContainer(container: Docker.Container): Promise<void> {
-        // console.log('Stopping and removing container:', container.id);
+        this.logger.debug('[Container ${container.id}] Stopping and removing container.');
         const status = this.containerStatuses.get(container.id);
-        // console.log('Container status:', status);
         if (status !== 'running') {
-            console.warn(`Container ${container.id} is already being stopped or has been stopped.`);
+            this.logger.warn(`[Container ${container.id}] Container is already being stopped or has been stopped.`);
             return;
         }
 
@@ -132,9 +137,9 @@ export class IoService {
             }
             await container.remove();
             this.containerStatuses.delete(container.id);
-            // console.log(`Container ${container.id} stopped and removed.`);
+            this.logger.debug(`[Container ${container.id}] Container stopped and removed.`);
         } catch (error) {
-            console.error('Error stopping or removing container:', error);
+            this.logger.error('[Container ${container.id}] Error stopping or removing container:', error);
         }
     }
 
@@ -228,7 +233,7 @@ export class IoService {
                 };
             }
         } catch (error) {
-            console.warn('Error in retrieving and encoding files or no files were generated:', error);
+            this.logger.warn('[Container ${container.id}] Error retrieving files:', error);
         }
 
         return encodedFiles;
@@ -255,4 +260,9 @@ export class IoService {
         }
     }
 
+    static hrtimeToMilliseconds(startTime: bigint) {
+        const NS_TO_MS = 1e6;
+        const diff = process.hrtime.bigint() - startTime;
+        return Number(diff / BigInt(NS_TO_MS));
+    }
 }
