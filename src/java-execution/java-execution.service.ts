@@ -271,6 +271,11 @@ export class JavaExecutionService {
 
             this.logger.verbose(`[Container ${container.id}] ${output}\n`);
 
+            // If a compilation error occurred, replace the output with the compilation errors
+            if (containerEndStatus.StatusCode !== 0) {
+                programOutput = fs.readFileSync(`${tempDir}/compile_errors.txt`, 'utf8');
+            }
+
             return { output: programOutput, testResults: jsonResults, testsPassed, score };
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
