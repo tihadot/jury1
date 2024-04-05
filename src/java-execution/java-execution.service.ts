@@ -186,35 +186,39 @@ export class JavaExecutionService {
         // Decode and save files
         await this.ioService.handleFileOperations(tempDir, files, this.javaSanitizerService, true);
         // Decode and save test files
-        await this.ioService.handleFileOperations(tempDir, testFiles, undefined, true);
+        const testDir = `${tempDir}/test`;
+        mkdirSync(testDir, { recursive: true });
+        await this.ioService.handleFileOperations(testDir, testFiles, undefined, true);
 
         let container: Docker.Container;
-
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.javaJunitImage,
-            // Finds all java files in the current directory structure, compiles them and executes the main class. Then runs the tests with JUnit. If the compilation fails, a corresponding error is returned.
             Cmd: ['sh', '-c', `
                 START_COMPILE=$(date +%s%3N);
-                if ! find . -name "*.java" -exec javac -cp .:/junit/* {} + > compile_errors.txt 2>&1; then
-                    # create json file using jo (included in the provided docker image)
-                    echo "[" > test-results.json
-                    jo -p test=Compilation status=FAILED exception=@compile_errors.txt >> /usr/src/app/test-results.json
-                    echo "]" >> test-results.json
+                # Compile main source files
+                if ! find . -name "*.java" ! -path "*test*" -exec javac -cp .:/junit/* {} + > main_compile_errors.txt 2>&1; then
                     exit 1
-                else
-                    END_COMPILE=$(date +%s%3N);
-                    COMPILE_DURATION=$((END_COMPILE-START_COMPILE));
-                    echo "Java Compilation time: $COMPILE_DURATION milliseconds.";
                 fi
 
+                # Compile test files
+                if ! (cd test && find . -name "*.java" -exec javac -cp ..:/junit/* {} +) > test_compile_errors.txt 2>&1; then
+                    exit 1
+                fi
+
+                END_COMPILE=$(date +%s%3N);
+                COMPILE_DURATION=$((END_COMPILE-START_COMPILE));
+                echo "Java Compilation time: $COMPILE_DURATION milliseconds.";
+
+                # Execute the main class
                 START_EXECUTION=$(date +%s%3N);
-                java -cp . ${mainClassName} > program_output.txt
+                java -cp . ${mainClassName} > program_output.txt 2>&1;
                 END_EXECUTION=$(date +%s%3N);
                 EXECUTION_DURATION=$((END_EXECUTION-START_EXECUTION));
                 echo "Java Execution time: $EXECUTION_DURATION milliseconds.";
 
+                # Execute tests
                 START_TESTS=$(date +%s%3N);
-                java -cp .:/junit/* org.junit.platform.console.ConsoleLauncher --scan-classpath --disable-ansi-colors --disable-banner --details=none
+                java -cp .:/junit/*:test org.junit.platform.console.ConsoleLauncher --scan-classpath --disable-ansi-colors --disable-banner --details=none > test-results.json 2>&1
                 END_TESTS=$(date +%s%3N);
                 TESTS_DURATION=$((END_TESTS-START_TESTS));
                 echo "Java Testing time: $TESTS_DURATION milliseconds.";
@@ -232,6 +236,8 @@ export class JavaExecutionService {
 
         let testsPassed = false;
         let score = 0;
+        let programOutput = "";
+        let jsonResults = JSON.parse("[]");
 
         try {
             // Create and start the Docker container
@@ -242,36 +248,48 @@ export class JavaExecutionService {
             // Wait for the container to finish executing
             const containerEndStatus = await container.wait();
 
-            // Read the program output from the file
-            const programOutputPath = `${tempDir}/program_output.txt`;
-            let programOutput = '';
-            try {
-                programOutput = fs.readFileSync(programOutputPath, 'utf8');
-            } catch (error) {
+            let compilationErrorOccurred = false;
 
+            // Check for main source compilation errors
+            if (fs.existsSync(`${tempDir}/main_compile_errors.txt`)) {
+                const mainCompileErrors = fs.readFileSync(`${tempDir}/main_compile_errors.txt`, 'utf8');
+                if (mainCompileErrors.length > 0) {
+                    programOutput = mainCompileErrors;
+                    jsonResults = [{ test: 'MAIN_COMPILATION', status: 'FAILED' }];
+                    compilationErrorOccurred = true;
+                }
             }
 
-            // Read the test results from the file
-            const resultsPath = `${tempDir}/test-results.json`;
-            const testResults = fs.readFileSync(resultsPath, 'utf8');
-            const jsonResults = JSON.parse(testResults);
+            // Check for test compilation errors
+            if (fs.existsSync(`${tempDir}/test_compile_errors.txt`)) {
+                const testCompileErrors = fs.readFileSync(`${tempDir}/test_compile_errors.txt`, 'utf8');
+                if (testCompileErrors.length > 0) {
+                    jsonResults = [{ test: 'TEST_COMPILATION', status: 'FAILED' }];
+                    compilationErrorOccurred = true;
+                }
+            }
 
-            // Calculate the number of passed tests
-            const passedTests = jsonResults.filter((result: { status: string; }) => result.status === "SUCCESSFUL").length;
-            const totalTests = jsonResults.length;
+            if (!compilationErrorOccurred) {
+                // If no compilation errors, read the program and test execution output
+                const programOutputPath = `${tempDir}/program_output.txt`;
+                programOutput = fs.existsSync(programOutputPath) ? fs.readFileSync(programOutputPath, 'utf8') : "";
 
-            // Update testsPassed based on all tests being successful
-            testsPassed = passedTests === totalTests;
+                const resultsPath = `${tempDir}/test-results.json`;
+                const testResults = fs.existsSync(resultsPath) ? fs.readFileSync(resultsPath, 'utf8') : "[]";
+                jsonResults = JSON.parse(testResults);
 
-            // Calculate score as a percentage
-            score = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
+                // Calculate the number of passed tests
+                const passedTests = jsonResults.filter((result: { status: string; }) => result.status === "SUCCESSFUL").length;
+                const totalTests = jsonResults.length;
+
+                // Update testsPassed based on all tests being successful
+                testsPassed = passedTests === totalTests;
+
+                // Calculate score as a percentage
+                score = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
+            }
 
             this.logger.verbose(`[Container ${container.id}] ${output}\n`);
-
-            // If a compilation error occurred, replace the output with the compilation errors
-            if (containerEndStatus.StatusCode !== 0) {
-                programOutput = fs.readFileSync(`${tempDir}/compile_errors.txt`, 'utf8');
-            }
 
             return { output: programOutput, testResults: jsonResults, testsPassed, score };
         } finally {
