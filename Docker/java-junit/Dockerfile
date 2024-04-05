@@ -5,8 +5,8 @@ FROM eclipse-temurin:21-jdk-alpine
 # Set up working directory
 WORKDIR /usr/src/app
 
-# Install jo (for JSON parsing) and coreutils (for time measurement)
-RUN apk update && apk add --no-cache jo coreutils
+# Install coreutils (for time measurement)
+RUN apk update && apk add --no-cache coreutils
 
 # JUnit Platform Console Standalone (for running tests)
 RUN mkdir /junit && \
