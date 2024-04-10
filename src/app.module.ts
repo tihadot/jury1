@@ -22,7 +22,7 @@ import 'winston-daily-rotate-file';
     transports: [
       new winston.transports.Console(),
       new winston.transports.DailyRotateFile({
-        filename: 'logs/%DATE%.log',
+        filename: '/logs/%DATE%.log',
         datePattern: 'YYYY-MM-DD',
         zippedArchive: true,
       }),

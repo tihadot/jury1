@@ -10,6 +10,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # Default to using the host's tmp directory if not set. Windows users will need to set this to e.g. //c/tmp
       - ${HOST_TMP_DIR:-/tmp}:/tmp
+      - ${HOST_LOG_DIR:-./logs}:/logs
     command: npm run start:dev
     ports:
       - 3000:3000
