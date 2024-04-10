@@ -199,7 +199,7 @@ export class JavaExecutionService {
             Cmd: ['sh', '-c', `
                 START_COMPILE=$(date +%s%3N);
                 # Compile main source files
-                if ! find . -name "*.java" ! -path "*test*" -exec javac -cp .:/junit/* {} + > main_compile_errors.txt 2>&1; then
+                if ! find . -name "*.java" ! -path "./test/*" -exec javac -cp .:/junit/* {} + > main_compile_errors.txt 2>&1; then
                     exit 1
                 fi
 
@@ -253,7 +253,7 @@ export class JavaExecutionService {
 
             let compilationErrorOccurred = false;
 
-            // Check for main source compilation errors
+            // Check for main & test compilation errors
             if (fs.existsSync(`${tempDir}/main_compile_errors.txt`)) {
                 const mainCompileErrors = fs.readFileSync(`${tempDir}/main_compile_errors.txt`, 'utf8');
                 if (mainCompileErrors.length > 0) {
@@ -261,10 +261,7 @@ export class JavaExecutionService {
                     jsonResults = [{ test: 'MAIN_COMPILATION', status: 'FAILED' }];
                     compilationErrorOccurred = true;
                 }
-            }
-
-            // Check for test compilation errors
-            if (fs.existsSync(`${tempDir}/test_compile_errors.txt`)) {
+            } else if (fs.existsSync(`${tempDir}/test_compile_errors.txt`)) {
                 const testCompileErrors = fs.readFileSync(`${tempDir}/test_compile_errors.txt`, 'utf8');
                 if (testCompileErrors.length > 0) {
                     jsonResults = [{ test: 'TEST_COMPILATION', status: 'FAILED' }];
