@@ -218,7 +218,7 @@ export class JavaExecutionService {
 
                 # Execute tests
                 START_TESTS=$(date +%s%3N);
-                java -cp .:/junit/*:test org.junit.platform.console.ConsoleLauncher --scan-classpath --disable-ansi-colors --disable-banner --details=none 2>&1
+                java -cp .:/junit/*:test org.junit.platform.console.ConsoleLauncher --scan-classpath --disable-ansi-colors --disable-banner --details=none 2>&1 > /dev/null;
                 END_TESTS=$(date +%s%3N);
                 TESTS_DURATION=$((END_TESTS-START_TESTS));
                 echo "Java Testing time: $TESTS_DURATION milliseconds.";
