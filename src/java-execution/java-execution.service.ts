@@ -205,7 +205,7 @@ export class JavaExecutionService {
 
                 # Compile test files
                 if ! (cd test && find . -name "*.java" -exec javac -cp ..:/junit/* {} +) > test_compile_errors.txt 2>&1; then
-                    exit 1
+                    : # Ignore test compilation errors
                 fi
 
                 END_COMPILE=$(date +%s%3N);
@@ -253,7 +253,7 @@ export class JavaExecutionService {
 
             let compilationErrorOccurred = false;
 
-            // Check for main & test compilation errors
+            // Check for main source compilation errors
             if (fs.existsSync(`${tempDir}/main_compile_errors.txt`)) {
                 const mainCompileErrors = fs.readFileSync(`${tempDir}/main_compile_errors.txt`, 'utf8');
                 if (mainCompileErrors.length > 0) {
@@ -261,10 +261,18 @@ export class JavaExecutionService {
                     jsonResults = [{ test: 'MAIN_COMPILATION', status: 'FAILED' }];
                     compilationErrorOccurred = true;
                 }
-            } else if (fs.existsSync(`${tempDir}/test_compile_errors.txt`)) {
+            }
+
+            // Check for test compilation errors
+            if (!compilationErrorOccurred && fs.existsSync(`${tempDir}/test_compile_errors.txt`)) {
                 const testCompileErrors = fs.readFileSync(`${tempDir}/test_compile_errors.txt`, 'utf8');
                 if (testCompileErrors.length > 0) {
                     jsonResults = [{ test: 'TEST_COMPILATION', status: 'FAILED' }];
+
+                    // The main class compiled successfully, so there still might be program output
+                    const programOutputPath = `${tempDir}/program_output.txt`;
+                    programOutput = fs.existsSync(programOutputPath) ? fs.readFileSync(programOutputPath, 'utf8') : "";
+
                     compilationErrorOccurred = true;
                 }
             }
