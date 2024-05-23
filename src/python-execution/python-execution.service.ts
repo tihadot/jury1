@@ -180,7 +180,7 @@ export class PythonExecutionService {
      * @param { Record<string, string> } testFiles - The test files of the project (filename (pattern: test_*.py): base64 encoded content)
      * @param { string } runMethod - The method to run (optional)
      * @param { string } input - The input for the method (optional)
-     * @returns { Promise<{ testResults: JSON, testsPassed: boolean, score: number }> } - The test results, whether the tests passed and the score (number of passed tests / total number of tests)
+     * @returns { Promise<{ output: string, testResults: JSON, testsPassed: boolean, score: number }> } - The test results, whether the tests passed and the score (number of passed tests / total number of tests)
      * @throws { Error } - If the input is not valid base64 encoded
      * @throws { Error } - If the code is not safe to execute
      */
@@ -204,7 +204,9 @@ export class PythonExecutionService {
         // Determine the entry point (main file name)
         const mainFileName = Object.keys(mainFile)[0]; // Assumes only one main file is provided
 
-        let cmd = 'echo "No program to run"';
+        // Ensure the code is always checked for syntax errors using pyflakes
+        let cmd = `pyflakes . && `;
+
         if (mainFileName && runMethod && mainFileName !== '' && runMethod !== '') {
             const mainFilePath = join(tempDir, 'mainFileName.txt');
             writeFileSync(mainFilePath, mainFileName.replace('.py', ''));
@@ -215,18 +217,23 @@ export class PythonExecutionService {
             }
             const inputFilePath = join(tempDir, 'input.txt');
             writeFileSync(inputFilePath, input);
-            cmd = `python -c "import $(cat -e mainFileName.txt); $(cat -e mainFileName.txt).$(cat -e runMethod.txt)($(cat -e input.txt))"`;
+            cmd += `
+            python -c "import $(cat -e mainFileName.txt); $(cat -e mainFileName.txt).$(cat -e runMethod.txt)($(cat -e input.txt))" &&
+            python /custom-test-runner/json_test_runner.py &> /dev/null &&
+        `;
+        } else {
+            cmd += `
+            python /custom-test-runner/json_test_runner.py &> /dev/null &&
+        `;
         }
 
         const containerOptions: Docker.ContainerCreateOptions = {
             Image: this.pythonUnittestImage,
             // Runs the program & tests discovered by unittest
             Cmd: ['sh', '-c', `
-                ${cmd},
-                python /custom-test-runner/json_test_runner.py &> /dev/null &&
-                (exit 0) ||
+            ${cmd} (exit 0) ||
                 (exit 1)
-            `],
+        `],
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
@@ -240,6 +247,7 @@ export class PythonExecutionService {
 
         let testsPassed = false;
         let score = 0;
+        let output = '';
 
         try {
             // Create and start the Docker container
@@ -248,24 +256,36 @@ export class PythonExecutionService {
             // Wait for the container to finish executing
             const containerEndStatus = await container.wait();
 
-            let output = await this.ioService.getContainerOutput(container);
+            output = await this.ioService.getContainerOutput(container);
+
+            let testResults;
+
+            // If the container did not exit successfully, return a MAIN_COMPILATION test with a status of FAILED
+            if (containerEndStatus.StatusCode !== 0) {
+                testResults = [{ test: 'MAIN_COMPILATION', status: 'FAILED' }];
+                return { output: output, testResults: testResults, testsPassed, score };
+            }
 
             // Read the test results from the file
             const resultsPath = `${tempDir}/test-results.json`;
-            const testResults = fs.readFileSync(resultsPath, 'utf8');
-            const jsonResults = JSON.parse(testResults);
+            if (fs.existsSync(resultsPath)) {
+                const testResultsContent = fs.readFileSync(resultsPath, 'utf8');
+                testResults = JSON.parse(testResultsContent);
+            } else {
+                testResults = [];
+            }
 
             // Calculate the number of passed tests
-            const passedTests = jsonResults.filter((result: { status: string; }) => result.status === "SUCCESSFUL").length;
-            const totalTests = jsonResults.length;
+            const passedTests = testResults.filter((result: { status: string; }) => result.status === "SUCCESSFUL").length;
+            const totalTests = testResults.length;
 
             // Update testsPassed based on all tests being successful
-            testsPassed = passedTests === totalTests;
+            testsPassed = totalTests > 0 ? (passedTests === totalTests) : false;
 
             // Calculate score as a percentage
             score = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
 
-            return { output: output, testResults: jsonResults, testsPassed, score };
+            return { output: output, testResults: testResults, testsPassed, score };
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
             await this.ioService.stopAndRemoveContainer(container);
