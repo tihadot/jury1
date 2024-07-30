@@ -1,0 +1,111 @@
+{
+	"info": {
+		"_postman_id": "439527be-83d2-44c8-8e25-69e2c6bbc8d6",
+		"name": "jury1_dev_cpp",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29526519"
+	},
+	"item": [
+		{
+			"name": "Execute Cpp",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "code",
+							"value": "#include <iostream>\n\nint main() {\n    std::cout << \"Hello World!\";\n    return 0;\n}",
+							"type": "text"
+						},
+						{
+							"key": "code",
+							"value": "I2luY2x1ZGUgPGlvc3RyZWFtPgoKaW50IG1haW4oKSB7CiAgICBzdGQ6OmNvdXQgPDwgIkhlbGxvIFdvcmxkISI7CiAgICByZXR1cm4gMDsKfQ==",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "localhost:3000/execute/cpp?isInputBase64=false&shouldOutputBase64=false",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"cpp"
+					],
+					"query": [
+						{
+							"key": "isInputBase64",
+							"value": "false"
+						},
+						{
+							"key": "shouldOutputBase64",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Execute Cpp Project",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"input\": \"Test!\",\r\n    \"mainFile\": {\r\n        \"main.cpp\": \"I2luY2x1ZGUgIkNsaWVudC5oIgojaW5jbHVkZSAiU2VydmVyLmgiCiNpbmNsdWRlIDxpb3N0cmVhbT4KCmludCBtYWluKGludCBhcmdjLCBjaGFyKiBhcmd2W10pIHsKICAgIGlmIChhcmdjIDwgMikgewogICAgICAgIHN0ZDo6Y2VyciA8PCAiVXNhZ2U6ICIgPDwgYXJndlswXSA8PCAiIDxtZXNzYWdlPiIgPDwgc3RkOjplbmRsOwogICAgICAgIHJldHVybiAxOwogICAgfQoKICAgIHN0ZDo6c3RyaW5nIG1lc3NhZ2UgPSBhcmd2WzFdOyAvLyBHZXQgbWVzc2FnZSBmcm9tIGNvbW1hbmQgbGluZQoKICAgIENsaWVudCBjbGllbnQ7CiAgICBTZXJ2ZXIgc2VydmVyOwoKICAgIHN0ZDo6c3RyaW5nIHNlbnRNZXNzYWdlID0gY2xpZW50LnNlbmRNZXNzYWdlKG1lc3NhZ2UpOwogICAgc3RkOjpzdHJpbmcgcmVzcG9uc2UgPSBzZXJ2ZXIucmVjZWl2ZU1lc3NhZ2Uoc2VudE1lc3NhZ2UpOwoKICAgIHN0ZDo6Y291dCA8PCAiU2VydmVyIFJlc3BvbnNlOiAiIDw8IHJlc3BvbnNlIDw8IHN0ZDo6ZW5kbDsKCiAgICByZXR1cm4gMDsKfQo=\"\r\n    },\r\n    \"additionalFiles\": {\r\n        \"Client.h\": \"I2lmbmRlZiBDTElFTlRfSAojZGVmaW5lIENMSUVOVF9ICgojaW5jbHVkZSA8c3RyaW5nPgoKY2xhc3MgQ2xpZW50IHsKcHVibGljOgogICAgc3RkOjpzdHJpbmcgc2VuZE1lc3NhZ2UoY29uc3Qgc3RkOjpzdHJpbmcmIG1zZyk7Cn07CgojZW5kaWYK\",\r\n        \"Client.cpp\": \"I2luY2x1ZGUgIkNsaWVudC5oIgoKc3RkOjpzdHJpbmcgQ2xpZW50OjpzZW5kTWVzc2FnZShjb25zdCBzdGQ6OnN0cmluZyYgbXNnKSB7CiAgICByZXR1cm4gIk1lc3NhZ2Ugc2VudDogIiArIG1zZzsKfQo=\",\r\n        \"Server.h\": \"I2lmbmRlZiBTRVJWRVJfSAojZGVmaW5lIFNFUlZFUl9ICgojaW5jbHVkZSA8c3RyaW5nPgoKY2xhc3MgU2VydmVyIHsKcHVibGljOgogICAgc3RkOjpzdHJpbmcgcmVjZWl2ZU1lc3NhZ2UoY29uc3Qgc3RkOjpzdHJpbmcmIG1zZyk7Cn07CgojZW5kaWYK\",\r\n        \"Server.cpp\": \"I2luY2x1ZGUgIlNlcnZlci5oIgoKc3RkOjpzdHJpbmcgU2VydmVyOjpyZWNlaXZlTWVzc2FnZShjb25zdCBzdGQ6OnN0cmluZyYgbXNnKSB7CiAgICByZXR1cm4gIlNlcnZlciByZWNlaXZlZDogIiArIG1zZzsKfQo=\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/execute/cpp-project",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"cpp-project"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Execute Cpp Assignment",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"files\": {\r\n        \"Calculator.h\": \"Y2xhc3MgQ2FsY3VsYXRvciB7CnB1YmxpYzoKICAgIGludCBhZGQoaW50IGEsIGludCBiKSB7CiAgICAgICAgcmV0dXJuIGEgKyBiOwogICAgfQp9Owo=\",\r\n        \"Greeter.h\": \"I2luY2x1ZGUgPHN0cmluZz4KCmNsYXNzIEdyZWV0ZXIgewpwdWJsaWM6CiAgICBzdGQ6OnN0cmluZyBncmVldChjb25zdCBzdGQ6OnN0cmluZyYgbmFtZSkgewogICAgICAgIHJldHVybiAiSGVsbG8sICIgKyBuYW1lICsgIiEiOwogICAgfQp9OwoK\"\r\n    },\r\n    \"testFile\": \"I2RlZmluZSBET0NURVNUX0NPTkZJR19JTVBMRU1FTlRfV0lUSF9NQUlOCiNpbmNsdWRlIDxKc29uUmVwb3J0ZXIuaD4KI2luY2x1ZGUgIkNhbGN1bGF0b3IuaCIKI2luY2x1ZGUgIkdyZWV0ZXIuaCIKClRFU1RfQ0FTRSgiQ2FsY3VsYXRvciBhZGQgbWV0aG9kIikgewogICAgQ2FsY3VsYXRvciBjYWxjOwoKICAgIFNVQkNBU0UoIkFkZGluZyBwb3NpdGl2ZSBudW1iZXJzIikgewogICAgICAgIFJFUVVJUkUoY2FsYy5hZGQoNSwgMykgPT0gOCk7CiAgICB9CgogICAgU1VCQ0FTRSgiQWRkaW5nIG5lZ2F0aXZlIG51bWJlcnMiKSB7CiAgICAgICAgUkVRVUlSRShjYWxjLmFkZCgtMiwgLTQpID09IC02KTsKICAgIH0KfQoKVEVTVF9DQVNFKCJHcmVldGVyIGdyZWV0IG1ldGhvZCIpIHsKICAgIEdyZWV0ZXIgZ3JlZXRlcjsKCiAgICBTVUJDQVNFKCJHcmVldGluZyBhIHBlcnNvbiIpIHsKICAgICAgICBSRVFVSVJFKGdyZWV0ZXIuZ3JlZXQoIkpvaG4iKSA9PSAiSGVsbG8sIEpvaG4hIik7CiAgICB9CgogICAgU1VCQ0FTRSgiR3JlZXRpbmcgYW4gZW1wdHkgc3RyaW5nIikgewogICAgICAgIFJFUVVJUkUoZ3JlZXRlci5ncmVldCgiIikgPT0gIkhlbGxvLCAhIik7CiAgICB9Cn0=\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/execute/cpp-assignment",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"execute",
+						"cpp-assignment"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
