@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import * as Docker from 'dockerode';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
 import * as fs from 'fs';
 import { IoService } from '../io/io.service';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 /**
  * @class CppExecutionService - Service that handles the execution of code
@@ -32,6 +33,7 @@ export class CppExecutionService {
      * Creates an instance of CppExecutionService.
      */
     constructor(
+        @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
         private readonly ioService: IoService,
     ) { }
 
@@ -104,8 +106,11 @@ export class CppExecutionService {
         // Determine the command to compile all cpp files and run the main file
         let cmd = `g++ -o main ${mainFileName}`;
         for (const fileName in additionalFiles) {
-            cmd += ` ${fileName}`;
+            if (fileName.endsWith('.cpp')) {
+                cmd += ` ${fileName}`;
+            }
         }
+
         cmd += ` && ./main`;
         if (input) {
             const inputFilePath = join(tempDir, 'input.txt');
@@ -146,7 +151,7 @@ export class CppExecutionService {
         } finally {
             // Cleanup: Stop and remove the container, and delete the temp directory
             await this.ioService.stopAndRemoveContainer(container);
-
+            
             rmSync(tempDir, { recursive: true, force: true });
         }
     }
@@ -172,7 +177,9 @@ export class CppExecutionService {
         // Determine the command to compile the test file, all cpp files, and run the tests with doctest using the json reporter
         let cmd = `g++ -o test test.cpp`;
         for (const fileName in files) {
-            cmd += ` ${fileName}`;
+            if (fileName.endsWith('.cpp')) {
+                cmd += ` ${fileName}`;
+            }
         }
         cmd += ` && ./test -r json`;
 
