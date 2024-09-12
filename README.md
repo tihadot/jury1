@@ -8,7 +8,7 @@ This project is a NestJS-based service for executing Python and Java code secure
 - **Code Sanitization**: Includes services to sanitize input code to prevent malicious code execution.
 - **Support for Base64 Encoding**: Handles base64 encoded inputs for multi-file projects.
 - **Flexible Docker Configuration**: Adapts Docker configuration based on the environment.
-- **Interactive Coding**: Support for interactive coding sessions, allowing users to write, test, and debug code in a more engaging and intuitive environment.
+- (**Interactive Coding**: Support for interactive coding sessions, allowing users to write, test, and debug code in a more engaging and intuitive environment.)
 
 ## Getting Started
 
@@ -35,7 +35,7 @@ This project is a NestJS-based service for executing Python and Java code secure
 
 3. **Environment Configuration:**
 
-   Set up your `.env` file with necessary configurations (Docker image names, runtime options, etc.)
+   Set up your `.env` file with necessary configurations (Docker image names, runtime options, etc.). See `env.example` for instructions.
 
 4. **Start the application:**
 
