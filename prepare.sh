@@ -13,6 +13,8 @@ DOCKER_IMAGE_PYTHON=${DOCKER_IMAGE_PYTHON:-python:alpine}
 DOCKER_IMAGE_PYTHON_UNITTEST=${DOCKER_IMAGE_PYTHON_UNITTEST:-python-unittest}
 DOCKER_IMAGE_JAVA=${DOCKER_IMAGE_JAVA:-eclipse-temurin:21-jdk-alpine}
 DOCKER_IMAGE_JAVA_JUNIT=${DOCKER_IMAGE_JAVA_JUNIT:-java-junit}
+DOCKER_IMAGE_CPP=${DOCKER_IMAGE_CPP:-cpp-doctest}
+DOCKER_IMAGE_CPP_DOCTEST=${DOCKER_IMAGE_CPP_DOCTEST:-cpp-doctest}
 
 # Pull Docker images
 docker pull "$DOCKER_IMAGE_PYTHON"
@@ -26,6 +28,7 @@ cd -
 # Build custom Docker images
 docker build -t "$DOCKER_IMAGE_PYTHON_UNITTEST" -f ./Docker/python-unittest/Dockerfile .
 docker build -t "$DOCKER_IMAGE_JAVA_JUNIT" -f ./Docker/java-junit/Dockerfile .
+docker build -t "$DOCKER_IMAGE_CPP_DOCTEST" -f ./Docker/cpp-doctest/Dockerfile .
 
 # Install gVisor
 ARCH=$(uname -m)

@@ -24,6 +24,9 @@ export class CppExecutionService {
     // The docker image to use for the c++ assignment execution. The dockerfile for this image can be found in the Docker/cpp-doctest directory
     private readonly cppDoctestImage = process.env.DOCKER_IMAGE_CPP_DOCTEST || 'cpp-doctest';
 
+    // The temporary directory on the host system to store the files generated in the container
+    private readonly hostTmpDir = process.env.HOST_TMP_DIR || (process.platform === 'win32' ? '//c/tmp' : '/tmp');
+
     // The limit for CPU usage in the container (in nanoCPUs. 1e9 nanoCPUs = 1 CPU core)
     private readonly cpuLimit = parseFloat(process.env.CPU_LIMIT || '0.8') * 1e9;
     // The limit for RAM usage in the container (in bytes)
@@ -62,8 +65,8 @@ export class CppExecutionService {
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
-                // Bind mount the temp directory to the container
-                Binds: [`${tempDir}:/usr/src/app`],
+                // Bind mount the host temp directory to the container
+                Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
                 NanoCpus: this.cpuLimit,
                 Memory: this.memoryLimit,
@@ -127,8 +130,8 @@ export class CppExecutionService {
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
-                // Bind mount the temp directory to the container
-                Binds: [`${tempDir}:/usr/src/app`],
+                // Bind mount the host temp directory to the container
+                Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
                 NanoCpus: this.cpuLimit,
                 Memory: this.memoryLimit,
@@ -201,8 +204,8 @@ export class CppExecutionService {
             WorkingDir: '/usr/src/app',
             Tty: false,
             HostConfig: {
-                // Bind mount the temp directory to the container
-                Binds: [`${tempDir}:/usr/src/app`],
+                // Bind mount the host temp directory to the container
+                Binds: [`${this.hostTmpDir}/jury1/${executionId}:/usr/src/app`],
                 Runtime: this.runtime,
                 NanoCpus: this.cpuLimit,
                 Memory: this.memoryLimit,

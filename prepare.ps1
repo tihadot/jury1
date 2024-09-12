@@ -24,6 +24,12 @@ if (-not $DOCKER_IMAGE_JAVA) { $DOCKER_IMAGE_JAVA = "eclipse-temurin:21-jdk-alpi
 $DOCKER_IMAGE_JAVA_JUNIT = [System.Environment]::GetEnvironmentVariable("DOCKER_IMAGE_JAVA_JUNIT", [System.EnvironmentVariableTarget]::Process)
 if (-not $DOCKER_IMAGE_JAVA_JUNIT) { $DOCKER_IMAGE_JAVA_JUNIT = "java-junit" }
 
+$DOCKER_IMAGE_CPP = [System.Environment]::GetEnvironmentVariable("DOCKER_IMAGE_CPP", [System.EnvironmentVariableTarget]::Process)
+if (-not $DOCKER_IMAGE_CPP) { $DOCKER_IMAGE_CPP = "cpp-doctest" }
+
+$DOCKER_IMAGE_CPP_DOCTEST = [System.Environment]::GetEnvironmentVariable("DOCKER_IMAGE_CPP_DOCTEST", [System.EnvironmentVariableTarget]::Process)
+if (-not $DOCKER_IMAGE_CPP_DOCTEST) { $DOCKER_IMAGE_CPP_DOCTEST = "cpp-doctest" }
+
 # Pull Docker images
 docker pull $DOCKER_IMAGE_PYTHON
 docker pull $DOCKER_IMAGE_JAVA
@@ -36,5 +42,6 @@ Pop-Location
 # Build custom Docker images
 docker build -t $DOCKER_IMAGE_PYTHON_UNITTEST -f ./Docker/python-unittest/Dockerfile .
 docker build -t $DOCKER_IMAGE_JAVA_JUNIT -f ./Docker/java-junit/Dockerfile .
+docker build -t $DOCKER_IMAGE_CPP_DOCTEST -f ./Docker/cpp-doctest/Dockerfile .
 
 Write-Host "Prepare script completed."
