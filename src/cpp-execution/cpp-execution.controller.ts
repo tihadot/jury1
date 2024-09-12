@@ -75,14 +75,14 @@ export class CppExecutionController {
      * Runs the tests for the given C++ project in a docker container
      * @param { Record<string, string> } body.files - The files of the project (filename: base64 encoded content)
      * @param { string } body.testFile - The test file of the project
-     * @returns { Promise<{ testResults: JSON, testsPassed: boolean, score: number }> } - The results of the tests, whether they passed, and the score
+     * @returns { Promise<{ output: string, testResults: JSON, testsPassed: boolean, score: number }> } - The output of the code, the results of the tests, whether they passed, and the score
      * @throws { BadRequestException } - If the input is not valid base64 encoded
      */
     @Post('/cpp-assignment')
     async executeCppAssignment(
         @Body() body: { files: Record<string, string>; testFile: string }
-    ): Promise<{ testResults: JSON, testsPassed: boolean, score: number }> {
-        let output: { testResults: JSON; testsPassed: boolean, score: number };
+    ): Promise<{ output: string, testResults: JSON, testsPassed: boolean, score: number }> {
+        let output: { output: string, testResults: JSON; testsPassed: boolean, score: number };
 
         try {
             output = await this.cppExecutionService.runCppAssignment(body.files, body.testFile);
@@ -92,6 +92,6 @@ export class CppExecutionController {
         }
 
         this.logger.debug("output: ", output);
-        return { testResults: output.testResults, testsPassed: output.testsPassed, score: output.score };
+        return { output: output.output, testResults: output.testResults, testsPassed: output.testsPassed, score: output.score };
     }
 }
